@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voynt — Credit Card Reward Strategy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+@font-face { font-family:'BL Melody'; src:local('BL Melody'),local('BLMelody'); font-weight:100 900; }
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --black:#090708; --storm:#636364; --white:#FFFFFF;
+  --skeptic:#CAE9D9; --pale:#97C6B1; --beauty:#629F86;
+  --border:rgba(9,7,8,0.09); --border2:rgba(9,7,8,0.16);
+}
+html { scroll-behavior:smooth; }
+body { background:var(--white); color:var(--black); font-family:'IBM Plex Mono',monospace; overflow-x:hidden; cursor:none; }
+
+/* CURSOR */
+#dot { position:fixed; pointer-events:none; z-index:9999; width:8px; height:8px; border-radius:50%; background:var(--beauty); transform:translate(-50%,-50%); left:-40px; top:-40px; }
+#ring { position:fixed; pointer-events:none; z-index:9998; width:28px; height:28px; border-radius:50%; border:1.5px solid rgba(98,159,134,.4); transform:translate(-50%,-50%); left:-40px; top:-40px; }
+
+/* TICKER */
+.ticker { position:fixed; top:0; left:0; right:0; z-index:60; background:var(--black); border-bottom:1px solid rgba(151,198,177,.16); padding:6px 0; overflow:hidden; white-space:nowrap; }
+.ticker-track { display:inline-flex; animation:tscroll 30s linear infinite; }
+.ticker-item { display:inline-flex; gap:8px; font-size:10px; font-family:'IBM Plex Mono',monospace; padding:0 36px; border-right:1px solid rgba(151,198,177,.1); }
+.ticker-key { color:var(--storm); } .ticker-val { color:var(--pale); }
+@keyframes tscroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+/* NAV */
+nav { position:fixed; top:33px; left:0; right:0; z-index:50; display:flex; align-items:center; justify-content:space-between; padding:16px 72px; border-bottom:1px solid var(--border); background:rgba(255,255,255,.94); backdrop-filter:blur(20px); }
+.logo { font-family:'BL Melody',sans-serif; font-weight:800; font-size:26px; letter-spacing:2px; color:var(--black); text-decoration:none; }
+.logo .ln { color:var(--beauty); }
+.nav-links { display:flex; align-items:center; gap:28px; }
+.nav-link { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--storm); text-decoration:none; letter-spacing:.8px; text-transform:uppercase; transition:color .2s; cursor:none; }
+.nav-link:hover { color:var(--black); }
+.nav-right { display:flex; align-items:center; gap:10px; }
+.btn-ghost { background:transparent; border:1px solid var(--border2); color:var(--storm); padding:8px 20px; border-radius:4px; font-family:'IBM Plex Mono',monospace; font-size:11px; cursor:none; transition:all .2s; letter-spacing:.6px; text-transform:uppercase; text-decoration:none; display:inline-block; }
+.btn-ghost:hover { border-color:var(--beauty); color:var(--black); }
+.btn-primary { background:var(--beauty); border:1px solid var(--beauty); color:var(--white); padding:8px 20px; border-radius:4px; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:500; cursor:none; transition:all .2s; letter-spacing:.6px; text-transform:uppercase; text-decoration:none; display:inline-block; }
+.btn-primary:hover { background:var(--pale); border-color:var(--pale); }
+
+/* HERO */
+.hero { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:140px 72px 80px; }
+.hero-logo { font-family:'BL Melody',sans-serif; font-weight:800; font-size:clamp(100px,18vw,200px); letter-spacing:-0.05em; line-height:1; color:var(--black); margin-bottom:32px; }
+.hero-logo .ln { color:var(--beauty); }
+.hero-headline { font-family:'Inter',sans-serif; font-weight:600; font-size:clamp(20px,2.8vw,34px); color:var(--storm); line-height:1.3; margin-bottom:40px; letter-spacing:-.3px; }
+.hero-headline .accent { color:var(--beauty); }
+.hero-cta { display:flex; align-items:center; gap:14px; }
+.btn-hero { background:var(--beauty); color:var(--white); border:none; padding:14px 32px; border-radius:4px; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; cursor:none; transition:background .25s,box-shadow .25s; letter-spacing:1px; text-transform:uppercase; display:inline-flex; align-items:center; gap:10px; text-decoration:none; }
+.btn-hero:hover { background:var(--pale); box-shadow:0 10px 28px rgba(98,159,134,.3); }
+.btn-hero .arrow { transition:transform .2s; }
+.btn-hero:hover .arrow { transform:translateX(4px); }
+.btn-outline { background:transparent; border:1px solid var(--border2); color:var(--storm); padding:14px 28px; border-radius:4px; font-family:'IBM Plex Mono',monospace; font-size:12px; cursor:none; transition:all .2s; letter-spacing:.8px; text-transform:uppercase; }
+.btn-outline:hover { border-color:var(--beauty); color:var(--black); }
+
+/* PAGE 2 — CARDS */
+.page-2 { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:100px 72px; gap:80px; }
+.page2-left { flex:0 0 420px; }
+.eyebrow { display:inline-flex; align-items:center; gap:8px; font-size:10px; color:var(--beauty); letter-spacing:2px; text-transform:uppercase; margin-bottom:28px; padding:5px 12px; border:1px solid rgba(98,159,134,.28); border-radius:2px; background:rgba(202,233,217,.38); font-family:'IBM Plex Mono',monospace; }
+.eyebrow::before { content:''; width:5px; height:5px; background:var(--beauty); border-radius:50%; animation:blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+.subline { font-family:'Inter',sans-serif; font-size:18px; line-height:1.75; color:var(--storm); margin-bottom:36px; }
+.subline strong { color:var(--black); font-weight:600; }
+.page2-cta { display:flex; flex-direction:column; }
+.page2-cta .btn-hero { align-self:flex-start; }
+.cta-note { font-size:10px; color:var(--storm); font-family:'IBM Plex Mono',monospace; margin-top:12px; }
+.page2-right { flex:0 0 400px; display:flex; justify-content:center; align-items:center; position:relative; height:520px; }
+.cards-stage { position:relative; width:320px; height:440px; }
+.cc { position:absolute; width:300px; height:188px; border-radius:14px; display:flex; flex-direction:column; justify-content:space-between; padding:20px 22px; box-shadow:0 18px 50px rgba(9,7,8,.13),0 4px 14px rgba(9,7,8,.07); transition:transform .4s cubic-bezier(.34,1.56,.64,1); cursor:none; overflow:hidden; }
+.cc:hover { transform:var(--hov) !important; z-index:10 !important; }
+.cc::before { content:''; position:absolute; top:0; left:0; right:0; height:50%; background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,transparent 100%); border-radius:14px 14px 0 0; pointer-events:none; }
+.cc-1 { background:linear-gradient(135deg,#090708 0%,#1e1e1e 55%,#090708 100%); border:1px solid rgba(151,198,177,.16); top:0;left:10px; transform:rotate(-11deg) translateY(16px); --hov:rotate(-11deg) translateY(-10px); z-index:1; }
+.cc-2 { background:linear-gradient(135deg,#3d6e5a 0%,#629F86 55%,#3d6e5a 100%); border:1px solid rgba(255,255,255,.16); top:30px;left:5px; transform:rotate(-5deg) translateY(8px); --hov:rotate(-5deg) translateY(-10px); z-index:2; }
+.cc-3 { background:linear-gradient(135deg,#5a8f7a 0%,#97C6B1 55%,#5a8f7a 100%); border:1px solid rgba(255,255,255,.2); top:55px;left:0; transform:rotate(0deg) translateY(4px); --hov:rotate(0deg) translateY(-10px); z-index:3; }
+.cc-4 { background:linear-gradient(135deg,#090708 0%,#2a2a2a 55%,#090708 100%); border:1px solid rgba(202,233,217,.12); top:80px;left:-4px; transform:rotate(5deg) translateY(0); --hov:rotate(5deg) translateY(-10px); z-index:4; }
+.cc-5 { background:linear-gradient(135deg,#8ecaaf 0%,#CAE9D9 55%,#8ecaaf 100%); border:1px solid rgba(9,7,8,.07); top:104px;left:-8px; transform:rotate(10deg) translateY(-4px); --hov:rotate(10deg) translateY(-14px); z-index:5; }
+.cc-top { display:flex; justify-content:space-between; align-items:flex-start; }
+.cc-bank { font-family:'BL Melody',sans-serif; font-weight:700; font-size:14px; letter-spacing:1.5px; text-transform:uppercase; }
+.cc-chip { width:28px; height:20px; border-radius:4px; background:linear-gradient(135deg,#97C6B1,#CAE9D9,#629F86); border:1px solid rgba(255,255,255,.28); }
+.cc-number { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:3px; color:rgba(255,255,255,.28); padding-top:8px; }
+.cc-3 .cc-number,.cc-5 .cc-number { color:rgba(9,7,8,.24); }
+.cc-bottom { display:flex; justify-content:space-between; align-items:flex-end; }
+.cc-name { font-family:'BL Melody',sans-serif; font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,.38); }
+.cc-3 .cc-name,.cc-5 .cc-name { color:rgba(9,7,8,.35); }
+.cc-reward { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--skeptic); font-weight:500; }
+.cc-3 .cc-reward,.cc-5 .cc-reward { color:var(--black); }
+.cc-network { position:absolute; bottom:14px; right:16px; display:flex; }
+.cc-network span { width:18px; height:18px; border-radius:50%; display:block; }
+.cc-network span:first-child { background:rgba(202,233,217,.48); margin-right:-6px; }
+.cc-network span:last-child { background:rgba(151,198,177,.36); }
+.cc-3 .cc-network span,.cc-5 .cc-network span { background:rgba(9,7,8,.14); }
+.float-badge { position:absolute; bottom:20px; right:-52px; background:var(--white); border:1px solid var(--border2); border-radius:8px; padding:12px 16px; display:flex; align-items:center; gap:10px; animation:floatY 3s ease-in-out infinite; z-index:20; box-shadow:0 8px 24px rgba(9,7,8,.1); }
+.gauge-badge { position:absolute; top:10px; right:-48px; background:var(--white); border:1px solid var(--border2); border-radius:8px; padding:12px 16px; text-align:center; animation:floatY 3.5s .6s ease-in-out infinite; z-index:20; box-shadow:0 8px 24px rgba(9,7,8,.1); }
+@keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.badge-icon { font-size:16px; color:var(--beauty); }
+.badge-text strong { display:block; color:var(--beauty); font-family:'BL Melody',sans-serif; font-size:18px; font-weight:700; line-height:1; }
+.badge-text span { color:var(--storm); font-size:9px; font-family:'IBM Plex Mono',monospace; }
+.gauge-mini { width:72px; height:36px; margin:0 auto 6px; }
+.gauge-mini svg { width:72px; height:36px; }
+.gauge-pct { font-family:'BL Melody',sans-serif; font-size:22px; font-weight:700; color:var(--beauty); line-height:1; }
+.gauge-label { font-size:8px; color:var(--storm); letter-spacing:1.5px; text-transform:uppercase; margin-top:2px; font-family:'IBM Plex Mono',monospace; }
+
+/* PAGE 3 — STATS */
+.page-3 { min-height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:stretch; padding:100px 72px 80px; gap:48px; }
+.stats-row { display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.stat-block { flex:1; padding:40px 44px; border-right:1px solid var(--border); background:var(--white); transition:background .2s; }
+.stat-block:last-child { border-right:none; }
+.stat-block:hover { background:var(--skeptic); }
+.stat-num { font-family:'BL Melody',sans-serif; font-size:52px; font-weight:800; color:var(--black); letter-spacing:-1px; line-height:1; margin-bottom:8px; }
+.stat-num span { color:var(--beauty); }
+.stat-label { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--storm); letter-spacing:1.5px; text-transform:uppercase; }
+.features-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.feat-card { background:var(--skeptic); border:1px solid rgba(98,159,134,.2); border-radius:8px; padding:32px; transition:background .2s,border-color .2s; position:relative; overflow:hidden; }
+.feat-card:hover { background:var(--pale); border-color:var(--beauty); }
+.feat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--beauty),transparent); opacity:0; transition:opacity .3s; }
+.feat-card:hover::before { opacity:1; }
+.feat-num { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--beauty); letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; }
+.feat-title { font-family:'BL Melody',sans-serif; font-size:20px; font-weight:700; color:var(--black); margin-bottom:10px; text-transform:uppercase; letter-spacing:.5px; }
+.feat-desc { font-family:'Inter',sans-serif; font-size:13px; line-height:1.7; color:var(--storm); }
+
+/* HOW IT WORKS */
+.hiw { background:var(--black); padding:120px 72px; position:relative; overflow:hidden; }
+.hiw::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(98,159,134,.1) 0%,transparent 70%); pointer-events:none; }
+.hiw-header { text-align:center; margin-bottom:80px; position:relative; }
+.hiw-eyebrow { display:inline-flex; align-items:center; gap:10px; font-size:10px; color:var(--beauty); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:20px; font-family:'IBM Plex Mono',monospace; }
+.hiw-eyebrow::before,.hiw-eyebrow::after { content:''; width:28px; height:1px; background:var(--beauty); opacity:.6; }
+.hiw-title { font-family:'BL Melody',sans-serif; font-weight:800; font-size:clamp(36px,5vw,60px); color:var(--white); letter-spacing:-0.03em; line-height:1.05; }
+.hiw-title span { color:var(--beauty); }
+.steps-container { max-width:1100px; margin:0 auto; }
+.step-row { display:grid; grid-template-columns:1fr 1fr; gap:0; align-items:center; padding:72px 0; border-bottom:1px solid rgba(151,198,177,.08); }
+.step-row:last-child { border-bottom:none; }
+.step-row.reverse { direction:rtl; }
+.step-row.reverse > * { direction:ltr; }
+.step-content { padding-right:64px; }
+.step-row.reverse .step-content { padding-right:0; padding-left:64px; }
+.step-label { display:flex; align-items:center; gap:14px; margin-bottom:24px; }
+.step-num { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--beauty); letter-spacing:2px; }
+.step-line { flex:1; max-width:40px; height:1px; background:linear-gradient(to right,var(--beauty),transparent); }
+.step-tag { font-family:'IBM Plex Mono',monospace; font-size:9px; color:rgba(98,159,134,.6); letter-spacing:1.5px; text-transform:uppercase; padding:4px 10px; border:1px solid rgba(98,159,134,.2); border-radius:3px; }
+.step-title { font-family:'BL Melody',sans-serif; font-weight:800; font-size:clamp(28px,3.5vw,46px); color:var(--white); letter-spacing:-0.03em; line-height:1.1; margin-bottom:20px; }
+.step-title span { color:var(--beauty); }
+.step-desc { font-family:'Inter',sans-serif; font-size:15px; color:rgba(151,198,177,.55); line-height:1.8; margin-bottom:28px; }
+.step-detail { display:flex; flex-direction:column; gap:10px; }
+.detail-item { display:flex; align-items:flex-start; gap:12px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:rgba(151,198,177,.5); line-height:1.6; }
+.detail-item::before { content:'→'; color:var(--beauty); flex-shrink:0; margin-top:1px; }
+.step-visual { position:relative; display:flex; align-items:center; justify-content:center; min-height:320px; }
+
+/* Mockup cards */
+.mock-input { background:rgba(255,255,255,.04); border:1px solid rgba(151,198,177,.15); border-radius:12px; padding:28px; width:100%; max-width:360px; animation:floatY 4s ease-in-out infinite; }
+.mock-input-label { font-size:9px; color:rgba(151,198,177,.4); letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; font-family:'IBM Plex Mono',monospace; }
+.mock-input-field { background:rgba(255,255,255,.05); border:1px solid rgba(98,159,134,.25); border-radius:8px; padding:14px 16px; font-family:'Inter',sans-serif; font-size:14px; color:var(--white); margin-bottom:16px; }
+.mock-cursor { display:inline-block; width:2px; height:16px; background:var(--beauty); margin-left:2px; vertical-align:middle; animation:blink 1s infinite; }
+.mock-tags { display:flex; flex-wrap:wrap; gap:6px; }
+.mock-tag { padding:5px 10px; border-radius:20px; font-family:'IBM Plex Mono',monospace; font-size:10px; background:rgba(98,159,134,.15); border:1px solid rgba(98,159,134,.25); color:var(--pale); }
+.mock-sim { background:rgba(255,255,255,.04); border:1px solid rgba(151,198,177,.15); border-radius:12px; padding:28px; width:100%; max-width:360px; }
+.sim-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.sim-title { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--pale); }
+.sim-badge { font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--beauty); padding:3px 8px; border:1px solid rgba(98,159,134,.3); border-radius:3px; animation:blink 1.5s infinite; }
+.sim-bar-row { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+.sim-bar-label { display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:10px; color:rgba(151,198,177,.5); margin-bottom:5px; }
+.sim-bar-track { height:6px; background:rgba(255,255,255,.06); border-radius:3px; overflow:hidden; }
+.sim-bar-fill { height:100%; background:linear-gradient(90deg,var(--beauty),var(--pale)); border-radius:3px; }
+.sim-count { text-align:center; font-family:'BL Melody',sans-serif; font-size:32px; font-weight:800; color:var(--beauty); }
+.sim-count-label { text-align:center; font-family:'IBM Plex Mono',monospace; font-size:9px; color:rgba(151,198,177,.4); letter-spacing:1.5px; text-transform:uppercase; margin-top:4px; }
+.mock-sandbox { background:rgba(255,255,255,.04); border:1px solid rgba(151,198,177,.15); border-radius:12px; padding:28px; width:100%; max-width:360px; animation:floatY 4.5s .5s ease-in-out infinite; }
+.sandbox-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+.sandbox-title { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--pale); }
+.sandbox-total { font-family:'BL Melody',sans-serif; font-size:20px; font-weight:800; color:var(--beauty); }
+.slider-row { margin-bottom:14px; }
+.slider-meta { display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:10px; color:rgba(151,198,177,.5); margin-bottom:7px; }
+.slider-track { height:4px; background:rgba(255,255,255,.08); border-radius:2px; position:relative; }
+.slider-fill { height:100%; background:linear-gradient(90deg,var(--beauty),var(--pale)); border-radius:2px; }
+.slider-thumb { position:absolute; top:50%; transform:translateY(-50%); width:12px; height:12px; border-radius:50%; background:var(--white); border:2px solid var(--beauty); }
+.confidence-row { display:flex; align-items:center; gap:10px; margin-top:18px; padding-top:18px; border-top:1px solid rgba(151,198,177,.08); }
+.conf-label { font-family:'IBM Plex Mono',monospace; font-size:10px; color:rgba(151,198,177,.4); flex:1; }
+.conf-val { font-family:'BL Melody',sans-serif; font-weight:700; font-size:18px; color:var(--beauty); }
+
+/* CTA STRIP */
+.cta-strip { background:rgba(98,159,134,.06); border-top:1px solid rgba(98,159,134,.12); border-bottom:1px solid rgba(98,159,134,.12); padding:80px 72px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:20px; background:var(--black); }
+.cta-strip h2 { font-family:'BL Melody',sans-serif; font-weight:800; font-size:clamp(28px,4vw,48px); color:var(--white); letter-spacing:-0.03em; }
+.cta-strip h2 span { color:var(--beauty); }
+.cta-strip p { font-family:'Inter',sans-serif; font-size:15px; color:rgba(151,198,177,.5); max-width:420px; }
+.cta-strip .btn-hero { background:var(--beauty); }
+.cta-strip-note { font-family:'IBM Plex Mono',monospace; font-size:10px; color:rgba(99,99,100,.5); }
+
+/* FOOTER */
+footer { background:var(--black); padding:32px 72px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(151,198,177,.1); }
+.footer-logo { font-family:'BL Melody',sans-serif; font-size:20px; font-weight:800; letter-spacing:2px; color:var(--white); }
+.footer-logo .ln { color:var(--beauty); }
+.footer-note { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--storm); }
+</style>
+</head>
+<body>
+
+<div id="dot"></div>
+<div id="ring"></div>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track">
+    <div class="ticker-item"><span class="ticker-key">HDFC REGALIA</span><span class="ticker-val">5x pts</span></div>
+    <div class="ticker-item"><span class="ticker-key">AXIS ATLAS</span><span class="ticker-val">5 MILES/₹100</span></div>
+    <div class="ticker-item"><span class="ticker-key">AMEX MRCC</span><span class="ticker-val">4x MR</span></div>
+    <div class="ticker-item"><span class="ticker-key">SBI SIMPLYCLICK</span><span class="ticker-val">10x online</span></div>
+    <div class="ticker-item"><span class="ticker-key">ICICI AMAZON PAY</span><span class="ticker-val">5% CB</span></div>
+    <div class="ticker-item"><span class="ticker-key">HDFC MILLENNIA</span><span class="ticker-val">5% CB</span></div>
+    <div class="ticker-item"><span class="ticker-key">HDFC INFINIA</span><span class="ticker-val">3.3% return</span></div>
+    <div class="ticker-item"><span class="ticker-key">HDFC REGALIA</span><span class="ticker-val">5x pts</span></div>
+    <div class="ticker-item"><span class="ticker-key">AXIS ATLAS</span><span class="ticker-val">5 MILES/₹100</span></div>
+    <div class="ticker-item"><span class="ticker-key">AMEX MRCC</span><span class="ticker-val">4x MR</span></div>
+    <div class="ticker-item"><span class="ticker-key">SBI SIMPLYCLICK</span><span class="ticker-val">10x online</span></div>
+    <div class="ticker-item"><span class="ticker-key">ICICI AMAZON PAY</span><span class="ticker-val">5% CB</span></div>
+    <div class="ticker-item"><span class="ticker-key">HDFC MILLENNIA</span><span class="ticker-val">5% CB</span></div>
+    <div class="ticker-item"><span class="ticker-key">HDFC INFINIA</span><span class="ticker-val">3.3% return</span></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="index.html">Voy<span class="ln">n</span>t</a>
+  <div class="nav-links">
+    <a class="nav-link" href="how-it-works.html">How it works</a>
+    <a class="nav-link" href="#">Cards</a>
+    <a class="nav-link" href="simulations.html">Sandbox</a>
+  </div>
+  <div class="nav-right">
+    <a class="btn-ghost" href="auth.html#login">Log in</a>
+    <a class="btn-primary" href="auth.html#signup">Sign up free</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-logo">Voy<span class="ln">n</span>t</div>
+  <p class="hero-headline">Turn your spending into a <span class="accent">reward strategy.</span></p>
+  <div class="hero-cta">
+    <a class="btn-hero" href="auth.html#signup">Start Planning <span class="arrow">→</span></a>
+    <a class="btn-outline" href="how-it-works.html">See how it works</a>
+  </div>
+</section>
+
+<!-- PAGE 2 — CARDS -->
+<section class="page-2">
+  <div class="page2-left">
+    <div class="eyebrow">Credit card intelligence</div>
+    <p class="subline">Tell Voynt your goal — a trip, a purchase, a target.<br>Get a <strong>precision credit card plan</strong> with a real confidence score, built on Monte Carlo simulation.</p>
+    <div class="page2-cta">
+      <a class="btn-hero" href="auth.html#signup">Start Planning <span class="arrow">→</span></a>
+      <span class="cta-note">No card required &nbsp;·&nbsp; 2 min setup</span>
+    </div>
+  </div>
+  <div class="page2-right">
+    <div class="cards-stage">
+      <div class="cc cc-1">
+        <div class="cc-top"><div class="cc-bank" style="color:#97C6B1">HDFC</div><div class="cc-chip"></div></div>
+        <div class="cc-number">•••• •••• •••• 4821</div>
+        <div class="cc-bottom"><div class="cc-name">Regalia Gold</div><div class="cc-reward">5x pts</div></div>
+        <div class="cc-network"><span></span><span></span></div>
+      </div>
+      <div class="cc cc-2">
+        <div class="cc-top"><div class="cc-bank" style="color:#CAE9D9">Amex</div><div class="cc-chip"></div></div>
+        <div class="cc-number">•••• •••• •••• 7304</div>
+        <div class="cc-bottom"><div class="cc-name">MRCC</div><div class="cc-reward">4x MR pts</div></div>
+        <div class="cc-network"><span></span><span></span></div>
+      </div>
+      <div class="cc cc-3">
+        <div class="cc-top"><div class="cc-bank" style="color:#090708">Axis</div><div class="cc-chip"></div></div>
+        <div class="cc-number">•••• •••• •••• 9152</div>
+        <div class="cc-bottom"><div class="cc-name">Atlas</div><div class="cc-reward">5 EDGE Miles</div></div>
+        <div class="cc-network"><span></span><span></span></div>
+      </div>
+      <div class="cc cc-4">
+        <div class="cc-top"><div class="cc-bank" style="color:#629F86">SBI</div><div class="cc-chip"></div></div>
+        <div class="cc-number">•••• •••• •••• 6631</div>
+        <div class="cc-bottom"><div class="cc-name">SimplyCLICK</div><div class="cc-reward">10x online</div></div>
+        <div class="cc-network"><span></span><span></span></div>
+      </div>
+      <div class="cc cc-5">
+        <div class="cc-top"><div class="cc-bank" style="color:#090708">ICICI</div><div class="cc-chip"></div></div>
+        <div class="cc-number">•••• •••• •••• 2089</div>
+        <div class="cc-bottom"><div class="cc-name">Amazon Pay</div><div class="cc-reward">5% cashback</div></div>
+        <div class="cc-network"><span></span><span></span></div>
+      </div>
+      <div class="float-badge">
+        <div class="badge-icon">◈</div>
+        <div class="badge-text"><strong>₹18,400</strong><span>Est. rewards · 4 months</span></div>
+      </div>
+      <div class="gauge-badge">
+        <div class="gauge-mini">
+          <svg viewBox="0 0 72 36">
+            <path d="M6,34 A28,28 0 0,1 66,34" fill="none" stroke="#CAE9D9" stroke-width="6" stroke-linecap="round"/>
+            <path d="M6,34 A28,28 0 0,1 66,34" fill="none" stroke="#629F86" stroke-width="6" stroke-linecap="round" stroke-dasharray="88" stroke-dashoffset="21"/>
+          </svg>
+        </div>
+        <div class="gauge-pct">76%</div>
+        <div class="gauge-label">Confidence</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PAGE 3 — STATS -->
+<section class="page-3">
+  <div class="stats-row">
+    <div class="stat-block"><div class="stat-num">10<span>+</span></div><div class="stat-label">Indian credit cards</div></div>
+    <div class="stat-block"><div class="stat-num">10<span>k</span></div><div class="stat-label">Simulations per plan</div></div>
+    <div class="stat-block"><div class="stat-num">₹2<span>L</span></div><div class="stat-label">Avg annual rewards</div></div>
+    <div class="stat-block"><div class="stat-num">78<span>%</span></div><div class="stat-label">Avg confidence score</div></div>
+  </div>
+  <div class="features-row">
+    <div class="feat-card">
+      <div class="feat-num">01 — Goal</div>
+      <div class="feat-title">Goal-first planning</div>
+      <div class="feat-desc">Describe your goal in plain language. Voynt parses intent and builds a reward strategy around it — not the other way around.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-num">02 — Simulate</div>
+      <div class="feat-title">Monte Carlo engine</div>
+      <div class="feat-desc">10,000 simulations model variable spending, offer windows, and bonus cycles to give you a real probability — not a guess.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-num">03 — Optimize</div>
+      <div class="feat-title">Live reward sandbox</div>
+      <div class="feat-desc">Adjust sliders, swap cards, and watch the reward total update in real time. Your strategy, continuously optimized.</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="hiw" id="how-it-works">
+  <div class="hiw-header">
+    <div class="hiw-eyebrow">How it works</div>
+    <h2 class="hiw-title">From goal to <span>reward strategy</span><br>in three steps</h2>
+  </div>
+  <div class="steps-container">
+
+    <div class="step-row">
+      <div class="step-content">
+        <div class="step-label"><span class="step-num">01 / 03</span><span class="step-line"></span><span class="step-tag">Input</span></div>
+        <h2 class="step-title">Set your <span>goal</span></h2>
+        <p class="step-desc">Tell Voynt what you're working toward — a flight to Tokyo, a MacBook, ₹50k cashback. Plain language, no jargon. Voynt parses intent and frames the entire strategy around your target.</p>
+        <div class="step-detail">
+          <div class="detail-item">Type your goal in natural language</div>
+          <div class="detail-item">Voynt extracts target amount, timeline & category</div>
+          <div class="detail-item">Add your monthly spending across categories</div>
+          <div class="detail-item">Select which cards you already hold</div>
+        </div>
+      </div>
+      <div class="step-visual">
+        <div class="mock-input">
+          <div class="mock-input-label">What's your goal?</div>
+          <div class="mock-input-field">Flight to Tokyo for 2 in December<span class="mock-cursor"></span></div>
+          <div class="mock-tags">
+            <span class="mock-tag">✈ Travel</span>
+            <span class="mock-tag">₹1.2L target</span>
+            <span class="mock-tag">~5 months</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-row reverse">
+      <div class="step-content">
+        <div class="step-label"><span class="step-num">02 / 03</span><span class="step-line"></span><span class="step-tag">Simulate</span></div>
+        <h2 class="step-title">Run the <span>simulation</span></h2>
+        <p class="step-desc">Voynt runs 10,000 Monte Carlo simulations across your spending patterns, card reward cycles, bonus windows, and expiry dates — then returns a ranked card stack with a real confidence score, not a guess.</p>
+        <div class="step-detail">
+          <div class="detail-item">10,000 simulations across variable spending paths</div>
+          <div class="detail-item">Models bonus windows, tier changes & expiry</div>
+          <div class="detail-item">Returns confidence score based on real probability</div>
+          <div class="detail-item">Ranks cards by expected reward yield for your goal</div>
+        </div>
+      </div>
+      <div class="step-visual">
+        <div class="mock-sim">
+          <div class="sim-header"><span class="sim-title">Monte Carlo Engine</span><span class="sim-badge">● Running</span></div>
+          <div class="sim-bar-row">
+            <div><div class="sim-bar-label"><span>HDFC Regalia</span><span>5x travel pts</span></div><div class="sim-bar-track"><div class="sim-bar-fill" style="width:82%"></div></div></div>
+            <div><div class="sim-bar-label"><span>Axis Atlas</span><span>5 EDGE Miles</span></div><div class="sim-bar-track"><div class="sim-bar-fill" style="width:71%"></div></div></div>
+            <div><div class="sim-bar-label"><span>Amex MRCC</span><span>4x MR pts</span></div><div class="sim-bar-track"><div class="sim-bar-fill" style="width:58%"></div></div></div>
+          </div>
+          <div class="sim-count">9,847</div>
+          <div class="sim-count-label">Simulations complete</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-content">
+        <div class="step-label"><span class="step-num">03 / 03</span><span class="step-line"></span><span class="step-tag">Optimise</span></div>
+        <h2 class="step-title">Fine-tune in <span>the sandbox</span></h2>
+        <p class="step-desc">Drag sliders, swap cards, toggle spend categories. The reward total and confidence score update live. Tweak until the plan fits your life — then lock it in and start earning.</p>
+        <div class="step-detail">
+          <div class="detail-item">Adjust monthly spend per category in real time</div>
+          <div class="detail-item">Swap cards and see the impact instantly</div>
+          <div class="detail-item">Confidence score recalculates on every change</div>
+          <div class="detail-item">Export your final plan or set reminders</div>
+        </div>
+      </div>
+      <div class="step-visual">
+        <div class="mock-sandbox">
+          <div class="sandbox-header"><span class="sandbox-title">Reward Sandbox</span><span class="sandbox-total">₹1,18,400</span></div>
+          <div class="slider-row"><div class="slider-meta"><span>Dining</span><span>₹8,000 / mo</span></div><div class="slider-track"><div class="slider-fill" style="width:65%"></div><div class="slider-thumb" style="left:calc(65% - 6px)"></div></div></div>
+          <div class="slider-row"><div class="slider-meta"><span>Travel</span><span>₹22,000 / mo</span></div><div class="slider-track"><div class="slider-fill" style="width:80%"></div><div class="slider-thumb" style="left:calc(80% - 6px)"></div></div></div>
+          <div class="slider-row"><div class="slider-meta"><span>Online shopping</span><span>₹12,000 / mo</span></div><div class="slider-track"><div class="slider-fill" style="width:48%"></div><div class="slider-thumb" style="left:calc(48% - 6px)"></div></div></div>
+          <div class="confidence-row"><span class="conf-label">Confidence score</span><span class="conf-val">78%</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- CTA STRIP -->
+<div class="cta-strip">
+  <h2>Ready to earn <span>smarter</span>?</h2>
+  <p>Start with your goal. Voynt does the rest — in about 2 minutes.</p>
+  <a class="btn-hero" href="auth.html#signup">Start Planning <span class="arrow">→</span></a>
+  <span class="cta-strip-note">No credit card required &nbsp;·&nbsp; Free to use</span>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Voy<span class="ln">n</span>t</div>
+  <div class="footer-note">Built for people who take their rewards seriously.</div>
+</footer>
+
+<script>
+const dot = document.getElementById('dot');
+const ring = document.getElementById('ring');
+let mx = -100, my = -100, rx = -100, ry = -100;
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+});
+document.addEventListener('mouseleave', () => { dot.style.opacity='0'; ring.style.opacity='0'; });
+document.addEventListener('mouseenter', () => { dot.style.opacity='1'; ring.style.opacity='1'; });
+(function lerpRing() {
+  rx += (mx-rx)*0.1; ry += (my-ry)*0.1;
+  ring.style.left = rx+'px'; ring.style.top = ry+'px';
+  requestAnimationFrame(lerpRing);
+})();
+</script>
+</body>
+</html>

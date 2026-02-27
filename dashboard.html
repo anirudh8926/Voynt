@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voynt — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+@font-face { font-family:'BL Melody'; src:local('BL Melody'),local('BLMelody'); font-weight:100 900; }
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --black:#090708; --storm:#636364; --white:#FFFFFF;
+  --skeptic:#CAE9D9; --pale:#97C6B1; --beauty:#629F86;
+  --border2:rgba(151,198,177,0.16);
+  --surface:rgba(12,12,14,.82);
+  --card-border:rgba(98,159,134,.18);
+}
+html { scroll-behavior:smooth; }
+body {
+  background:var(--black); color:var(--white);
+  font-family:'IBM Plex Mono',monospace;
+  min-height:100vh; overflow-x:hidden;
+}
+
+/* CURSOR */
+#dot { position:fixed; pointer-events:none; z-index:9999; width:8px; height:8px; border-radius:50%; background:var(--beauty); transform:translate(-50%,-50%); left:-40px; top:-40px; }
+#ring { position:fixed; pointer-events:none; z-index:9998; width:28px; height:28px; border-radius:50%; border:1.5px solid rgba(98,159,134,.4); transform:translate(-50%,-50%); left:-40px; top:-40px; }
+
+/* BG */
+.bg-glow { position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: radial-gradient(ellipse 55% 45% at 80% 0%, rgba(98,159,134,.10) 0%, transparent 60%),
+              radial-gradient(ellipse 35% 30% at 10% 100%, rgba(98,159,134,.06) 0%, transparent 60%); }
+.bg-grid { position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.025;
+  background-image: linear-gradient(rgba(98,159,134,1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(98,159,134,1) 1px, transparent 1px);
+  background-size:48px 48px; }
+
+/* SIDEBAR */
+.sidebar {
+  position:fixed; left:0; top:0; bottom:0; width:220px; z-index:40;
+  background:rgba(9,7,8,.95); border-right:1px solid var(--card-border);
+  backdrop-filter:blur(20px); display:flex; flex-direction:column;
+  padding:28px 0;
+}
+.sb-logo {
+  font-family:'BL Melody',sans-serif; font-weight:800; font-size:22px;
+  letter-spacing:2px; color:var(--white); text-decoration:none;
+  padding:0 24px; margin-bottom:40px; display:block;
+}
+.sb-logo .ln { color:var(--beauty); }
+
+.sb-section { font-size:8px; color:rgba(151,198,177,.28); letter-spacing:2px;
+  text-transform:uppercase; padding:0 24px; margin-bottom:8px; }
+
+.sb-nav { display:flex; flex-direction:column; gap:2px; margin-bottom:28px; padding:0 12px; }
+.sb-link {
+  display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:6px;
+  font-size:11px; color:rgba(151,198,177,.45); letter-spacing:.5px; cursor:pointer;
+  text-decoration:none; transition:all .2s; border:1px solid transparent;
+}
+.sb-link:hover { color:var(--pale); background:rgba(98,159,134,.06); }
+.sb-link.active { color:var(--beauty); background:rgba(98,159,134,.1); border-color:rgba(98,159,134,.18); }
+.sb-link svg { opacity:.6; flex-shrink:0; }
+.sb-link.active svg { opacity:1; }
+
+.sb-bottom { margin-top:auto; padding:0 24px; }
+.sb-user { display:flex; align-items:center; gap:10px; padding-top:20px; border-top:1px solid var(--card-border); }
+.sb-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--beauty),var(--pale)); display:flex; align-items:center; justify-content:center; font-size:12px; font-family:'BL Melody',sans-serif; font-weight:800; color:var(--black); flex-shrink:0; }
+.sb-user-info { flex:1; min-width:0; }
+.sb-user-name { font-size:11px; color:var(--white); letter-spacing:.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sb-user-tag { font-size:9px; color:var(--beauty); letter-spacing:1px; margin-top:1px; }
+
+/* MAIN */
+.main { margin-left:220px; min-height:100vh; position:relative; z-index:10; }
+
+/* TOP BAR */
+.topbar {
+  position:sticky; top:0; z-index:30; display:flex; align-items:center;
+  justify-content:space-between; padding:16px 36px;
+  background:rgba(9,7,8,.7); backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(151,198,177,.08);
+}
+.topbar-left { display:flex; flex-direction:column; }
+.topbar-greeting { font-family:'BL Melody',sans-serif; font-size:20px; font-weight:800; color:var(--white); letter-spacing:-.02em; }
+.topbar-greeting .accent { color:var(--beauty); }
+.topbar-date { font-size:9px; color:rgba(151,198,177,.35); letter-spacing:1.5px; text-transform:uppercase; margin-top:2px; }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.pulse-badge { display:flex; align-items:center; gap:6px; font-size:9px; color:rgba(98,159,134,.55); letter-spacing:1px; text-transform:uppercase; padding:6px 12px; border:1px solid rgba(98,159,134,.18); border-radius:20px; background:rgba(98,159,134,.05); }
+.pulse-dot { width:5px; height:5px; background:var(--beauty); border-radius:50%; animation:blink 2s infinite; box-shadow:0 0 6px rgba(98,159,134,.5); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+/* CONTENT */
+.content { padding:32px 36px 60px; }
+
+/* STAT CARDS ROW */
+.stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+.stat-card {
+  background:var(--surface); border:1px solid var(--card-border); border-radius:12px;
+  padding:20px 22px; position:relative; overflow:hidden;
+  transition:border-color .2s, box-shadow .2s;
+}
+.stat-card:hover { border-color:rgba(98,159,134,.35); box-shadow:0 8px 32px rgba(0,0,0,.4); }
+.stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg, transparent, var(--beauty), transparent); opacity:.35; }
+.stat-label { font-size:9px; color:rgba(151,198,177,.35); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px; }
+.stat-value { font-family:'BL Melody',sans-serif; font-size:28px; font-weight:800; color:var(--white); letter-spacing:-.03em; line-height:1; }
+.stat-value .unit { font-size:14px; opacity:.6; font-family:'IBM Plex Mono',monospace; font-weight:400; }
+.stat-delta { display:flex; align-items:center; gap:5px; margin-top:8px; font-size:10px; letter-spacing:.3px; }
+.stat-delta.up { color:var(--beauty); }
+.stat-delta.neutral { color:rgba(151,198,177,.4); }
+.stat-icon { position:absolute; right:18px; top:18px; font-size:18px; opacity:.35; }
+
+/* MAIN GRID */
+.grid-2 { display:grid; grid-template-columns:1fr 360px; gap:20px; margin-bottom:20px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
+
+/* PANEL */
+.panel {
+  background:var(--surface); border:1px solid var(--card-border); border-radius:12px;
+  padding:24px; position:relative; overflow:hidden;
+}
+.panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg, transparent, var(--beauty), transparent); opacity:.3; }
+.panel-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.panel-title { font-size:10px; color:rgba(151,198,177,.5); letter-spacing:1.5px; text-transform:uppercase; }
+.panel-badge { font-size:8px; padding:3px 10px; border-radius:20px; border:1px solid rgba(98,159,134,.28); background:rgba(98,159,134,.07); color:var(--beauty); letter-spacing:1px; text-transform:uppercase; }
+
+/* RECOMMENDED CARDS */
+.rec-card {
+  display:flex; align-items:center; gap:14px; padding:14px;
+  border:1px solid rgba(151,198,177,.1); border-radius:8px;
+  margin-bottom:10px; transition:all .2s; cursor:pointer; position:relative;
+  background:rgba(255,255,255,.02);
+}
+.rec-card:last-child { margin-bottom:0; }
+.rec-card:hover { border-color:rgba(98,159,134,.35); background:rgba(98,159,134,.05); }
+.rec-card.top-pick { border-color:rgba(98,159,134,.35); background:rgba(98,159,134,.07); }
+.top-tag { position:absolute; right:12px; top:10px; font-size:7px; padding:2px 8px; border-radius:10px; background:var(--beauty); color:var(--black); letter-spacing:1px; text-transform:uppercase; font-weight:700; }
+.cc-mini {
+  width:52px; height:34px; border-radius:5px; flex-shrink:0; display:flex;
+  align-items:center; justify-content:center; font-size:9px; font-weight:700;
+  letter-spacing:.5px; position:relative; overflow:hidden;
+}
+.cc-mini::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.12) 0%, transparent 60%); }
+.cc-mini.dark { background:linear-gradient(135deg,#090708,#2a2a2a); color:var(--pale); border:1px solid rgba(151,198,177,.2); }
+.cc-mini.green { background:linear-gradient(135deg,#3d6e5a,#629F86); color:var(--white); }
+.cc-mini.pale { background:linear-gradient(135deg,#5a8f7a,#97C6B1); color:var(--black); }
+.rec-info { flex:1; min-width:0; }
+.rec-name { font-size:12px; color:var(--white); letter-spacing:.2px; margin-bottom:3px; }
+.rec-bank { font-size:9px; color:rgba(151,198,177,.4); letter-spacing:.8px; }
+.rec-reward { font-size:11px; color:var(--beauty); letter-spacing:.3px; font-weight:500; }
+
+/* SPEND CHART */
+.chart-bars { display:flex; align-items:flex-end; gap:8px; height:100px; margin-top:4px; }
+.bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.bar-track { width:100%; background:rgba(255,255,255,.04); border-radius:3px; position:relative; height:80px; }
+.bar-fill { position:absolute; bottom:0; left:0; right:0; border-radius:3px; transition:height 1s cubic-bezier(.4,0,.2,1); }
+.bar-label { font-size:8px; color:rgba(151,198,177,.35); letter-spacing:.8px; text-align:center; text-transform:uppercase; }
+.bar-pct { font-size:9px; color:var(--beauty); }
+
+/* REWARDS ACTIVITY */
+.activity-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid rgba(151,198,177,.05); }
+.activity-item:last-child { border-bottom:none; }
+.act-icon { width:30px; height:30px; border-radius:6px; background:rgba(98,159,134,.1); border:1px solid rgba(98,159,134,.15); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+.act-info { flex:1; }
+.act-title { font-size:11px; color:var(--white); letter-spacing:.2px; }
+.act-date { font-size:9px; color:rgba(151,198,177,.35); letter-spacing:.5px; margin-top:2px; }
+.act-pts { font-size:12px; color:var(--beauty); font-weight:500; text-align:right; }
+.act-pts .act-sub { font-size:8px; color:rgba(151,198,177,.4); display:block; text-align:right; }
+
+/* STRATEGY SCORE */
+.score-ring-wrap { display:flex; flex-direction:column; align-items:center; padding:8px 0 16px; }
+.score-ring { position:relative; width:110px; height:110px; }
+.score-ring svg { transform:rotate(-90deg); }
+.score-ring circle.track { fill:none; stroke:rgba(151,198,177,.08); stroke-width:8; }
+.score-ring circle.fill { fill:none; stroke:url(#scoreGrad); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1); }
+.score-num { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.score-big { font-family:'BL Melody',sans-serif; font-size:26px; font-weight:800; color:var(--white); line-height:1; }
+.score-tag { font-size:8px; color:var(--beauty); letter-spacing:1px; margin-top:2px; text-transform:uppercase; }
+.score-meta { font-size:9px; color:rgba(151,198,177,.4); letter-spacing:.8px; margin-top:10px; text-align:center; text-transform:uppercase; }
+
+.insight-item { display:flex; align-items:flex-start; gap:10px; margin-bottom:12px; }
+.insight-item:last-child { margin-bottom:0; }
+.ins-dot { width:5px; height:5px; border-radius:50%; background:var(--beauty); flex-shrink:0; margin-top:5px; }
+.ins-text { font-family:'Inter',sans-serif; font-size:12px; color:rgba(151,198,177,.55); line-height:1.5; }
+.ins-text strong { color:var(--pale); font-weight:500; }
+
+/* WELCOME BANNER */
+.welcome-banner {
+  background:linear-gradient(135deg, rgba(98,159,134,.12) 0%, rgba(98,159,134,.04) 100%);
+  border:1px solid rgba(98,159,134,.25); border-radius:12px; padding:20px 24px;
+  margin-bottom:28px; display:flex; align-items:center; justify-content:space-between;
+  animation:bannerIn .6s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes bannerIn { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
+.wb-left { display:flex; align-items:center; gap:14px; }
+.wb-icon { font-size:28px; }
+.wb-title { font-family:'BL Melody',sans-serif; font-size:18px; font-weight:800; color:var(--white); letter-spacing:-.02em; }
+.wb-sub { font-family:'Inter',sans-serif; font-size:13px; color:rgba(151,198,177,.5); margin-top:2px; }
+.wb-dismiss { font-size:9px; color:rgba(151,198,177,.3); letter-spacing:1px; text-transform:uppercase; cursor:pointer; padding:6px 14px; border:1px solid rgba(151,198,177,.1); border-radius:20px; background:transparent; transition:all .2s; }
+.wb-dismiss:hover { color:var(--pale); border-color:rgba(98,159,134,.3); }
+
+/* DIVIDER */
+.section-divider { height:1px; background:rgba(151,198,177,.06); margin:4px 0 20px; }
+
+@media(max-width:900px) {
+  .sidebar { display:none; }
+  .main { margin-left:0; }
+  .stat-row { grid-template-columns:1fr 1fr; }
+  .grid-2 { grid-template-columns:1fr; }
+  .grid-3 { grid-template-columns:1fr; }
+  .content { padding:20px 18px 60px; }
+}
+
+/* ── SIMULATION VIEW ── */
+#view-sim { display:none; }
+#view-sim.active { display:block; animation:viewIn .35s cubic-bezier(.4,0,.2,1) both; }
+#view-dash { display:block; }
+#view-dash.hidden { display:none; }
+@keyframes viewIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+.topbar-sim-badge { display:flex; align-items:center; gap:6px; font-size:9px; color:rgba(202,233,217,.5); letter-spacing:1px; text-transform:uppercase; padding:6px 14px; border:1px solid rgba(202,233,217,.15); border-radius:20px; background:rgba(202,233,217,.04); }
+.topbar-sim-badge::before { content:''; width:5px; height:5px; background:var(--skeptic,#CAE9D9); border-radius:50%; animation:blink 2.5s infinite; }
+
+/* SEGMENT PROGRESS */
+.seg-bar { display:flex; gap:6px; margin-bottom:40px; }
+.seg { flex:1; height:3px; border-radius:2px; background:rgba(151,198,177,.1); position:relative; overflow:hidden; transition:background .3s; }
+.seg.done { background:rgba(98,159,134,.4); }
+.seg.active { background:rgba(98,159,134,.15); }
+.seg.active::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg, var(--beauty), var(--pale)); animation:segFill .4s cubic-bezier(.4,0,.2,1) forwards; }
+@keyframes segFill { from{transform:translateX(-100%)} to{transform:translateX(0)} }
+.seg-labels { display:flex; gap:6px; margin-bottom:32px; }
+.seg-label { flex:1; text-align:center; font-size:8px; letter-spacing:1px; color:rgba(151,198,177,.25); text-transform:uppercase; transition:color .3s; }
+.seg-label.active { color:var(--beauty); }
+.seg-label.done { color:rgba(98,159,134,.5); }
+
+/* STEP */
+.step { display:none; animation:stepIn .4s cubic-bezier(.4,0,.2,1) both; }
+.step.active { display:block; }
+@keyframes stepIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+/* STEP HEADER */
+.step-eyebrow { font-size:9px; color:rgba(98,159,134,.45); letter-spacing:3px; text-transform:uppercase; display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.step-eyebrow::before { content:''; width:20px; height:1px; background:var(--beauty); opacity:.5; }
+.step-title { font-family:'BL Melody',sans-serif; font-size:clamp(26px,4vw,38px); font-weight:800; letter-spacing:-.03em; line-height:1.08; color:var(--white); margin-bottom:8px; }
+.step-title .accent { color:var(--beauty); }
+.step-sub { font-family:'Inter',sans-serif; font-size:14px; color:rgba(151,198,177,.4); line-height:1.65; margin-bottom:28px; }
+
+/* CARD */
+.ob-card { background:var(--surface); border:1px solid var(--card-border); border-radius:14px; padding:32px; backdrop-filter:blur(24px); box-shadow:0 32px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(151,198,177,.06); position:relative; overflow:hidden; max-width:640px; }
+.ob-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg, transparent, var(--beauty), transparent); opacity:.4; }
+
+/* GOAL INPUT */
+.goal-field { position:relative; margin-bottom:20px; }
+.goal-input { width:100%; background:rgba(255,255,255,.03); border:1px solid rgba(151,198,177,.14); border-radius:10px; padding:20px 18px; font-family:'BL Melody',sans-serif; font-size:22px; font-weight:800; color:var(--white); outline:none; letter-spacing:-.02em; transition:border-color .2s, box-shadow .2s; }
+.goal-input::placeholder { color:rgba(151,198,177,.2); font-size:20px; }
+.goal-input:focus { border-color:rgba(98,159,134,.45); box-shadow:0 0 0 3px rgba(98,159,134,.07); }
+.goal-hint { font-size:9px; color:rgba(151,198,177,.3); letter-spacing:1px; margin-top:8px; text-transform:uppercase; }
+
+.examples { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; }
+.ex-chip { padding:7px 14px; border:1px solid rgba(151,198,177,.12); border-radius:20px; font-size:10px; color:rgba(151,198,177,.45); cursor:pointer; transition:all .2s; background:transparent; letter-spacing:.4px; }
+.ex-chip:hover { border-color:rgba(98,159,134,.4); color:var(--pale); background:rgba(98,159,134,.06); }
+
+.target-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:0; }
+.field-group { margin-bottom:20px; position:relative; }
+.field-group:last-child { margin-bottom:0; }
+.floating-label { position:absolute; top:14px; left:14px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.5px; color:rgba(151,198,177,.35); transition:all .2s cubic-bezier(.4,0,.2,1); pointer-events:none; z-index:1; }
+.form-input { width:100%; background:rgba(255,255,255,.03); border:1px solid rgba(151,198,177,.12); border-radius:6px; padding:20px 14px 8px; font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--white); outline:none; transition:border-color .2s, box-shadow .2s; -webkit-appearance:none; appearance:none; }
+.form-input::placeholder { color:transparent; }
+.form-input:focus { border-color:rgba(98,159,134,.45); box-shadow:0 0 0 3px rgba(98,159,134,.07); }
+.form-input:focus + .floating-label,
+.form-input:not(:placeholder-shown) + .floating-label { top:6px; font-size:9px; color:var(--beauty); letter-spacing:1.5px; }
+select.form-input { padding-right:36px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(151,198,177,.4)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; }
+select.form-input option { background:var(--black); color:var(--white); }
+
+/* SLIDERS */
+.slider-wrap { margin-bottom:20px; }
+.slider-meta { display:flex; justify-content:space-between; font-size:10px; color:rgba(151,198,177,.4); margin-bottom:10px; }
+.slider-meta .val { color:var(--beauty); font-family:'BL Melody',sans-serif; font-size:18px; font-weight:700; }
+input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:4px; background:rgba(255,255,255,.06); border-radius:2px; outline:none; cursor:pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--white); border:2.5px solid var(--beauty); box-shadow:0 0 10px rgba(98,159,134,.3); cursor:pointer; }
+
+/* CHIPS (sim) */
+.chip-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+.chip { padding:8px 14px; border-radius:20px; border:1px solid rgba(151,198,177,.15); font-family:'IBM Plex Mono',monospace; font-size:10px; color:rgba(151,198,177,.5); cursor:pointer; transition:all .2s; background:transparent; letter-spacing:.4px; }
+.chip:hover { border-color:rgba(98,159,134,.4); color:var(--pale); }
+.chip.selected { border-color:var(--beauty); background:rgba(98,159,134,.12); color:var(--beauty); }
+
+/* SEARCH */
+.search-wrap { position:relative; margin-bottom:12px; }
+.search-input { width:100%; background:rgba(255,255,255,.03); border:1px solid rgba(151,198,177,.12); border-radius:6px; padding:12px 14px 12px 38px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--white); outline:none; transition:border-color .2s; }
+.search-input::placeholder { color:rgba(151,198,177,.25); }
+.search-input:focus { border-color:rgba(98,159,134,.35); }
+.search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); opacity:.35; pointer-events:none; }
+
+/* TOGGLES */
+.toggle-group { margin-bottom:18px; }
+.toggle-label { font-size:9px; color:rgba(151,198,177,.35); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px; }
+.toggle-row { display:flex; gap:0; border:1px solid rgba(151,198,177,.14); border-radius:6px; overflow:hidden; }
+.toggle-btn { flex:1; padding:10px 8px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:rgba(151,198,177,.4); background:transparent; border:none; cursor:pointer; transition:all .2s; letter-spacing:.4px; text-transform:uppercase; border-right:1px solid rgba(151,198,177,.1); }
+.toggle-btn:last-child { border-right:none; }
+.toggle-btn.active { background:rgba(98,159,134,.14); color:var(--beauty); }
+.toggle-btn:hover:not(.active) { background:rgba(98,159,134,.04); color:var(--pale); }
+
+/* SECTION DIVIDER */
+.sdiv { margin:22px 0; height:1px; background:rgba(151,198,177,.07); }
+.sdiv-label { font-size:9px; color:rgba(151,198,177,.3); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:12px; }
+
+/* BUTTONS */
+.btn-row { display:flex; gap:10px; margin-top:28px; }
+.btn-hero-sim { flex:1; background:var(--beauty); color:var(--white); border:none; padding:14px 24px; border-radius:6px; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; cursor:pointer; transition:background .25s, box-shadow .25s; letter-spacing:1px; text-transform:uppercase; display:flex; align-items:center; justify-content:center; gap:10px; }
+.btn-hero-sim:hover { background:var(--pale); box-shadow:0 10px 28px rgba(98,159,134,.3); }
+.btn-hero-sim .arrow { transition:transform .2s; }
+.btn-hero-sim:hover .arrow { transform:translateX(4px); }
+.btn-back-sim { background:transparent; border:1px solid rgba(151,198,177,.15); color:rgba(151,198,177,.5); padding:14px 20px; border-radius:6px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.6px; text-transform:uppercase; cursor:pointer; transition:all .2s; flex:0 0 auto; }
+.btn-back-sim:hover { border-color:rgba(98,159,134,.4); color:var(--pale); }
+
+/* REVIEW */
+.review-row { display:flex; justify-content:space-between; align-items:flex-start; padding:12px 0; border-bottom:1px solid rgba(151,198,177,.06); }
+.review-row:last-child { border-bottom:none; }
+.review-key { font-size:10px; color:rgba(151,198,177,.4); letter-spacing:.8px; }
+.review-val { font-size:12px; color:var(--white); text-align:right; max-width:60%; }
+.review-val .highlight { color:var(--beauty); font-family:'BL Melody',sans-serif; font-size:16px; font-weight:800; }
+
+/* ROADMAP */
+#roadmapSection { display:none; margin-top:48px; }
+#roadmapSection.visible { display:block; animation:stepIn .5s cubic-bezier(.4,0,.2,1) both; }
+.roadmap-header { margin-bottom:32px; }
+.roadmap-eyebrow { font-size:9px; color:rgba(98,159,134,.45); letter-spacing:3px; text-transform:uppercase; display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.roadmap-eyebrow::before { content:''; width:20px; height:1px; background:var(--beauty); opacity:.5; }
+.roadmap-title { font-family:'BL Melody',sans-serif; font-size:clamp(24px,4vw,36px); font-weight:800; letter-spacing:-.03em; color:var(--white); margin-bottom:6px; }
+.roadmap-title .accent { color:var(--beauty); }
+.roadmap-sub { font-family:'Inter',sans-serif; font-size:14px; color:rgba(151,198,177,.4); }
+
+.rm-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:32px; }
+.rm-stat { background:var(--surface); border:1px solid var(--card-border); border-radius:10px; padding:16px 18px; position:relative; overflow:hidden; }
+.rm-stat::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg, transparent, var(--beauty), transparent); opacity:.3; }
+.rm-stat-label { font-size:8px; color:rgba(151,198,177,.35); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; }
+.rm-stat-val { font-family:'BL Melody',sans-serif; font-size:22px; font-weight:800; color:var(--white); letter-spacing:-.03em; }
+.rm-stat-val .unit { font-family:'IBM Plex Mono',monospace; font-size:11px; color:rgba(151,198,177,.5); font-weight:400; }
+.rm-stat-sub { font-size:9px; color:var(--beauty); margin-top:4px; }
+
+.timeline { position:relative; padding-left:32px; }
+.timeline::before { content:''; position:absolute; left:9px; top:8px; bottom:8px; width:1px; background:linear-gradient(180deg, var(--beauty), rgba(98,159,134,.1)); }
+.tl-item { position:relative; margin-bottom:24px; opacity:0; transform:translateY(12px); transition:opacity .5s ease, transform .5s ease; }
+.tl-item.reveal { opacity:1; transform:translateY(0); }
+.tl-dot { position:absolute; left:-28px; top:14px; width:10px; height:10px; border-radius:50%; background:var(--beauty); border:2px solid var(--black); box-shadow:0 0 12px rgba(98,159,134,.5); }
+.tl-dot.done { background:rgba(98,159,134,.4); box-shadow:none; }
+.tl-dot.future { background:rgba(151,198,177,.1); border-color:rgba(151,198,177,.2); box-shadow:none; }
+.tl-card { background:var(--surface); border:1px solid var(--card-border); border-radius:10px; padding:20px 22px; position:relative; overflow:hidden; transition:border-color .2s; }
+.tl-card:hover { border-color:rgba(98,159,134,.35); }
+.tl-card.highlight-card { border-color:rgba(98,159,134,.35); background:rgba(98,159,134,.06); }
+.tl-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg, transparent, var(--beauty), transparent); opacity:.25; }
+.tl-month { font-size:8px; color:rgba(151,198,177,.35); letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+.tl-month-badge { padding:2px 8px; border-radius:10px; background:rgba(98,159,134,.12); color:var(--beauty); font-size:7px; letter-spacing:1px; border:1px solid rgba(98,159,134,.2); }
+.tl-heading { font-family:'BL Melody',sans-serif; font-size:17px; font-weight:800; color:var(--white); letter-spacing:-.02em; margin-bottom:6px; }
+.tl-body { font-family:'Inter',sans-serif; font-size:13px; color:rgba(151,198,177,.5); line-height:1.6; margin-bottom:14px; }
+.tl-body strong { color:var(--pale); font-weight:500; }
+.tl-actions { display:flex; flex-wrap:wrap; gap:7px; }
+.tl-action { padding:5px 12px; border-radius:20px; font-size:9px; letter-spacing:.8px; text-transform:uppercase; border:1px solid rgba(98,159,134,.22); color:rgba(151,198,177,.6); background:rgba(98,159,134,.05); }
+.tl-action.primary { border-color:var(--beauty); color:var(--beauty); background:rgba(98,159,134,.1); }
+
+.card-reco-row { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+.card-pill { display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:6px; border:1px solid rgba(151,198,177,.12); background:rgba(255,255,255,.02); }
+.card-pill-chip { width:26px; height:17px; border-radius:3px; font-size:7px; font-weight:700; display:flex; align-items:center; justify-content:center; letter-spacing:.3px; }
+.card-pill-chip.dark { background:linear-gradient(135deg,#090708,#2a2a2a); color:var(--pale); }
+.card-pill-chip.green { background:linear-gradient(135deg,#3d6e5a,#629F86); color:var(--white); }
+.card-pill-chip.pale { background:linear-gradient(135deg,#5a8f7a,#97C6B1); color:var(--black); }
+.card-pill-name { font-size:10px; color:rgba(151,198,177,.55); }
+.card-pill-reward { font-size:10px; color:var(--beauty); margin-left:auto; }
+
+.milestone-bar { height:6px; background:rgba(255,255,255,.04); border-radius:3px; margin-top:14px; overflow:hidden; }
+.milestone-fill { height:100%; border-radius:3px; background:linear-gradient(90deg, var(--beauty), var(--pale)); width:0; transition:width 1.2s cubic-bezier(.4,0,.2,1); }
+
+.loading-overlay { display:none; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:60px 0; }
+.loading-overlay.active { display:flex; }
+.loading-spinner { width:36px; height:36px; border:2px solid rgba(98,159,134,.2); border-top-color:var(--beauty); border-radius:50%; animation:spin 1s linear infinite; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.loading-steps { display:flex; flex-direction:column; gap:8px; }
+.loading-step { display:flex; align-items:center; gap:10px; font-size:10px; color:rgba(151,198,177,.3); letter-spacing:.5px; opacity:0; transition:opacity .3s; }
+.loading-step.show { opacity:1; color:rgba(151,198,177,.6); }
+.loading-step .check { width:14px; height:14px; border-radius:50%; border:1px solid rgba(98,159,134,.3); display:flex; align-items:center; justify-content:center; font-size:8px; transition:all .3s; }
+.loading-step.show .check { background:rgba(98,159,134,.2); border-color:var(--beauty); color:var(--beauty); }
+
+</style>
+</head>
+<body>
+
+<div id="dot"></div>
+<div id="ring"></div>
+<div class="bg-glow"></div>
+<div class="bg-grid"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <a class="sb-logo" href="index.html">Voy<span class="ln">n</span>t</a>
+
+  <div class="sb-section">Overview</div>
+  <nav class="sb-nav">
+    <a class="sb-link active" id="sb-dash" href="dashboard.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </a>
+    <a class="sb-link" href="dashboard.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      My Cards
+    </a>
+    <a class="sb-link" href="dashboard.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Spend Analysis
+    </a>
+    <a class="sb-link" href="dashboard.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Rewards
+    </a>
+  </nav>
+
+  <div class="sb-section">Strategy</div>
+  <nav class="sb-nav">
+    <a class="sb-link" href="simulations.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      Simulations
+    </a>
+    <a class="sb-link" href="simulations.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      Compare Cards
+    </a>
+    <a class="sb-link" href="dashboard.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Reports
+    </a>
+    <a class="sb-link" href="simulations.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l9-4 9 4v6c0 5-4 9-9 10C7 21 3 17 3 12V6z"/></svg>
+      Sandbox
+    </a>
+  </nav>
+
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-avatar" id="avatarInitial">U</div>
+      <div class="sb-user-info">
+        <div class="sb-user-name" id="sidebarName">User</div>
+        <div class="sb-user-tag">Pro Member</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- TOP BAR -->
+  <div class="topbar" id="mainTopbar">
+    <div class="topbar-left" id="topbarLeft">
+      <div class="topbar-greeting">Good morning, <span class="accent" id="greetName">there</span>.</div>
+      <div class="topbar-date" id="topbarDate">—</div>
+    </div>
+    <div class="topbar-right" id="topbarRight">
+      <div class="pulse-badge"><span class="pulse-dot"></span>Strategy Active</div>
+    </div>
+  </div>
+
+  <div id="view-dash">
+<div class="content">
+
+    <!-- WELCOME BANNER -->
+    <div class="welcome-banner" id="welcomeBanner">
+      <div class="wb-left">
+        <div class="wb-icon">🎉</div>
+        <div>
+          <div class="wb-title">Your strategy is live.</div>
+          <div class="wb-sub">Voynt has analysed your profile and built a personalised reward plan.</div>
+        </div>
+      </div>
+      <button class="wb-dismiss" onclick="document.getElementById('welcomeBanner').style.display='none'">Dismiss</button>
+    </div>
+
+    <!-- STATS (populated by renderDashboard) -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">Total Rewards</div>
+        <div class="stat-value"><span id="statTotalRewards">—</span></div>
+        <div class="stat-delta up" id="statRewardsDelta">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-label">Total Fees</div>
+        <div class="stat-value"><span id="statTotalFees">—</span></div>
+        <div class="stat-delta neutral" id="statFeesNote">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-label">Net Reward Value</div>
+        <div class="stat-value"><span id="statNetValue">—</span></div>
+        <div class="stat-delta up" id="statBreakEven">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🃏</div>
+        <div class="stat-label">Yield Index</div>
+        <div class="stat-value"><span id="statYieldIndex">—</span><span class="unit"></span></div>
+        <div class="stat-delta neutral" id="statYieldNote">—</div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="grid-2">
+
+      <!-- RECOMMENDED CARDS -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Recommended Stack</div>
+          <div class="panel-badge">From Agent 2</div>
+        </div>
+
+        <div id="recommendedCardsContainer">
+          <!-- Filled dynamically by renderDashboard(results) -->
+        </div>
+
+        <div style="margin-top:16px; padding-top:16px; border-top:1px solid rgba(151,198,177,.07);">
+          <div style="font-family:'Inter',sans-serif; font-size:12px; color:rgba(151,198,177,.4); line-height:1.6;" id="recommendedSummary">—</div>
+        </div>
+      </div>
+
+      <!-- SCORE + INSIGHTS -->
+      <div style="display:flex; flex-direction:column; gap:20px;">
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Strategy Score</div>
+          </div>
+          <div class="score-ring-wrap">
+            <div class="score-ring">
+              <svg width="110" height="110" viewBox="0 0 110 110">
+                <defs>
+                  <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#629F86"/>
+                    <stop offset="100%" stop-color="#97C6B1"/>
+                  </linearGradient>
+                </defs>
+                <circle class="track" cx="55" cy="55" r="46"/>
+                <circle class="fill" id="scoreCircle" cx="55" cy="55" r="46"
+                  stroke-dasharray="289.03" stroke-dashoffset="289.03"/>
+              </svg>
+              <div class="score-num">
+                <div class="score-big" id="scoreNum">—</div>
+                <div class="score-tag">/100</div>
+              </div>
+            </div>
+            <div class="score-meta">Reward Efficiency Score</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Key Insights</div>
+          </div>
+          <div class="insight-item">
+            <div class="ins-dot"></div>
+            <div class="ins-text" id="aiNarrativeText">—</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BOTTOM GRID -->
+    <div class="grid-3">
+
+      <!-- SPEND BREAKDOWN -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Spend Breakdown</div>
+          <div class="panel-badge">Monthly</div>
+        </div>
+        <div class="chart-bars" id="chartBars">
+          <div class="bar-wrap" data-category="travel">
+            <div class="bar-pct" id="barPct1">—</div>
+            <div class="bar-track"><div class="bar-fill" id="b1" style="height:0;background:linear-gradient(180deg,var(--beauty),rgba(98,159,134,.4));"></div></div>
+            <div class="bar-label">Travel</div>
+          </div>
+          <div class="bar-wrap" data-category="groceries">
+            <div class="bar-pct" id="barPct2">—</div>
+            <div class="bar-track"><div class="bar-fill" id="b2" style="height:0;background:linear-gradient(180deg,var(--pale),rgba(151,198,177,.3));"></div></div>
+            <div class="bar-label">Grocery</div>
+          </div>
+          <div class="bar-wrap" data-category="dining">
+            <div class="bar-pct" id="barPct3">—</div>
+            <div class="bar-track"><div class="bar-fill" id="b3" style="height:0;background:linear-gradient(180deg,rgba(98,159,134,.7),rgba(98,159,134,.2));"></div></div>
+            <div class="bar-label">Dining</div>
+          </div>
+          <div class="bar-wrap" data-category="online">
+            <div class="bar-pct" id="barPct4">—</div>
+            <div class="bar-track"><div class="bar-fill" id="b4" style="height:0;background:linear-gradient(180deg,rgba(151,198,177,.6),rgba(151,198,177,.2));"></div></div>
+            <div class="bar-label">Online</div>
+          </div>
+          <div class="bar-wrap" data-category="other">
+            <div class="bar-pct" id="barPct5">—</div>
+            <div class="bar-track"><div class="bar-fill" id="b5" style="height:0;background:linear-gradient(180deg,rgba(98,159,134,.4),rgba(98,159,134,.1));"></div></div>
+            <div class="bar-label">Other</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECENT REWARDS (populated by renderDashboard) -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Reward Activity</div>
+          <div class="panel-badge">Simulated</div>
+        </div>
+        <div id="rewardActivityContainer">—</div>
+      </div>
+
+      <!-- NEXT STEPS (populated by renderDashboard) -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Next Steps</div>
+        </div>
+        <div id="nextStepsContainer">—</div>
+      </div>
+
+    </div>
+  </div>
+</div><!-- /view-dash -->
+
+
+  <div id="view-sim">
+    <!-- topbar is shared, content below -->
+    <div class="content">
+
+      <!-- SEGMENT PROGRESS -->
+      <div class="seg-bar" id="segBar">
+        <div class="seg active" id="seg1"></div>
+        <div class="seg" id="seg2"></div>
+        <div class="seg" id="seg3"></div>
+        <div class="seg" id="seg4"></div>
+      </div>
+      <div class="seg-labels" id="segLabels">
+        <div class="seg-label active" id="lbl1">Goal</div>
+        <div class="seg-label" id="lbl2">Finances</div>
+        <div class="seg-label" id="lbl3">Cards</div>
+        <div class="seg-label" id="lbl4">Risk + Credit</div>
+      </div>
+
+      <!-- STEP 1: GOAL -->
+      <div class="step active" id="step1">
+        <div class="step-eyebrow"><span>01</span> / 04 &nbsp;·&nbsp; Define Your Goal</div>
+        <h1 class="step-title">What's your<br><span class="accent">target?</span></h1>
+        <p class="step-sub">Describe your financial goal and Voynt will build a personalised reward roadmap.</p>
+        <div class="ob-card">
+          <div class="goal-field">
+            <input class="goal-input" id="goalInput" type="text" placeholder="e.g. Japan trip ₹2L" autocomplete="off">
+            <div class="goal-hint">Type your goal above or pick an example below</div>
+          </div>
+          <div style="font-size:9px;color:rgba(151,198,177,.3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">Examples</div>
+          <div class="examples" id="exampleChips">
+            <button class="ex-chip" onclick="setGoal('Japan trip ₹2L')">✈️ Japan trip ₹2L</button>
+            <button class="ex-chip" onclick="setGoal('Business class flight to London')">🛫 Business class London</button>
+            <button class="ex-chip" onclick="setGoal('Goa weekend getaway ₹40K')">🏖️ Goa weekend ₹40K</button>
+            <button class="ex-chip" onclick="setGoal('Earn ₹50K cashback this year')">💰 ₹50K cashback this year</button>
+            <button class="ex-chip" onclick="setGoal('Singapore trip for two ₹3L')">🌴 Singapore for two ₹3L</button>
+            <button class="ex-chip" onclick="setGoal('Lounge access + hotel upgrades')">🏨 Lounge + hotel upgrades</button>
+          </div>
+          <div class="sdiv"></div>
+          <div class="target-row">
+            <div class="field-group">
+              <input class="form-input" type="number" id="targetAmt" placeholder="Target Amount" min="0">
+              <label class="floating-label" for="targetAmt">Target Amount (₹)</label>
+            </div>
+            <div class="field-group">
+              <select class="form-input" id="targetTimeline" onchange="floatSel(this,'tl-lbl')">
+                <option value="" disabled selected></option>
+                <option value="3">3 months</option>
+                <option value="6">6 months</option>
+                <option value="9">9 months</option>
+                <option value="12">12 months</option>
+                <option value="18">18 months</option>
+                <option value="24">24 months</option>
+              </select>
+              <label class="floating-label" id="tl-lbl" for="targetTimeline">Timeline</label>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn-hero-sim" onclick="goStep(2)">Continue <span class="arrow">→</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: FINANCES -->
+      <div class="step" id="step2">
+        <div class="step-eyebrow"><span>02</span> / 04 &nbsp;·&nbsp; Financial Profile</div>
+        <h1 class="step-title">Your spending<br><span class="accent">capacity.</span></h1>
+        <p class="step-sub">Voynt uses these to simulate how fast you can accumulate rewards toward your goal.</p>
+        <div class="ob-card">
+          <div class="slider-wrap">
+            <div class="slider-meta"><span>Monthly Income</span><span class="val" id="incomeVal">₹75,000</span></div>
+            <input type="range" id="incomeSlider" min="20000" max="500000" step="5000" value="75000">
+          </div>
+          <div class="slider-wrap">
+            <div class="slider-meta"><span>Monthly Card Spend</span><span class="val" id="spendVal">₹30,000</span></div>
+            <input type="range" id="spendSlider" min="5000" max="300000" step="5000" value="30000">
+          </div>
+          <div class="slider-wrap" style="margin-bottom:0">
+            <div class="slider-meta"><span>Annual Travel Budget</span><span class="val" id="travelVal">₹1.5L</span></div>
+            <input type="range" id="travelSlider" min="0" max="1000000" step="10000" value="150000">
+          </div>
+          <div class="sdiv"></div>
+          <div class="sdiv-label">Top spend categories</div>
+          <div class="chip-grid" id="catChips">
+            <button class="chip selected" onclick="toggleChip(this)">✈️ Travel</button>
+            <button class="chip" onclick="toggleChip(this)">🍽️ Dining</button>
+            <button class="chip selected" onclick="toggleChip(this)">🛒 Groceries</button>
+            <button class="chip" onclick="toggleChip(this)">⛽ Fuel</button>
+            <button class="chip" onclick="toggleChip(this)">💻 Electronics</button>
+            <button class="chip" onclick="toggleChip(this)">🎬 Entertainment</button>
+            <button class="chip" onclick="toggleChip(this)">📱 Subscriptions</button>
+            <button class="chip" onclick="toggleChip(this)">📦 Online Shopping</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn-back-sim" onclick="goStep(1)">← Back</button>
+            <button class="btn-hero-sim" onclick="goStep(3)">Continue <span class="arrow">→</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: CARDS -->
+      <div class="step" id="step3">
+        <div class="step-eyebrow"><span>03</span> / 04 &nbsp;·&nbsp; Your Card Stack</div>
+        <h1 class="step-title">Cards you<br><span class="accent">already hold.</span></h1>
+        <p class="step-sub">Voynt will factor your existing cards into the simulation and suggest additions.</p>
+        <div class="ob-card">
+          <div class="search-wrap">
+            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(151,198,177,.5)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-input" id="cardSearch" type="text" placeholder="Search cards…" oninput="filterCards()">
+          </div>
+          <div class="chip-grid" id="cardChips">
+            <button class="chip" onclick="toggleChip(this)" data-card="HDFC Regalia Gold">HDFC Regalia Gold</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="HDFC Infinia">HDFC Infinia</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="HDFC Millennia">HDFC Millennia</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="Axis Atlas">Axis Atlas</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="Axis Vistara">Axis Vistara</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="Amex MRCC">Amex MRCC</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="Amex Gold">Amex Gold</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="ICICI Amazon Pay">ICICI Amazon Pay</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="ICICI Sapphiro">ICICI Sapphiro</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="SBI SimplyCLICK">SBI SimplyCLICK</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="Kotak League">Kotak League</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="IDFC First Wealth">IDFC First Wealth</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="IndusInd Pinnacle">IndusInd Pinnacle</button>
+            <button class="chip" onclick="toggleChip(this)" data-card="Yes Reserv">Yes Reserv</button>
+            <button class="chip none-chip" onclick="selectNone(this)">None yet</button>
+          </div>
+          <div class="sdiv"></div>
+          <div class="sdiv-label">Primary reward preference</div>
+          <div class="chip-grid" id="rewardChips">
+            <button class="chip selected" onclick="selectSingle(this,'rewardChips')">💰 Cashback</button>
+            <button class="chip" onclick="selectSingle(this,'rewardChips')">🛫 Air Miles</button>
+            <button class="chip" onclick="selectSingle(this,'rewardChips')">🏨 Hotel Points</button>
+            <button class="chip" onclick="selectSingle(this,'rewardChips')">🎁 Reward Points</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn-back-sim" onclick="goStep(2)">← Back</button>
+            <button class="btn-hero-sim" onclick="goStep(4)">Continue <span class="arrow">→</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4: RISK + CREDIT -->
+      <div class="step" id="step4">
+        <div class="step-eyebrow"><span>04</span> / 04 &nbsp;·&nbsp; Risk + Credit</div>
+        <h1 class="step-title">A few more<br><span class="accent">details.</span></h1>
+        <p class="step-sub">Helps Voynt recommend cards you're likely to get approved for.</p>
+        <div class="ob-card">
+          <div class="toggle-group">
+            <div class="toggle-label">Credit Score Range</div>
+            <div class="toggle-row" id="creditToggle">
+              <button class="toggle-btn" onclick="selectToggle('creditToggle',this)">Below 650</button>
+              <button class="toggle-btn" onclick="selectToggle('creditToggle',this)">650–750</button>
+              <button class="toggle-btn active" onclick="selectToggle('creditToggle',this)">750–800</button>
+              <button class="toggle-btn" onclick="selectToggle('creditToggle',this)">800+</button>
+            </div>
+          </div>
+          <div class="toggle-group">
+            <div class="toggle-label">Risk Appetite</div>
+            <div class="toggle-row" id="riskToggle">
+              <button class="toggle-btn active" onclick="selectToggle('riskToggle',this)">Conservative</button>
+              <button class="toggle-btn" onclick="selectToggle('riskToggle',this)">Moderate</button>
+              <button class="toggle-btn" onclick="selectToggle('riskToggle',this)">Aggressive</button>
+            </div>
+          </div>
+          <div class="toggle-group">
+            <div class="toggle-label">Willing to pay annual fees?</div>
+            <div class="toggle-row" id="feeToggle">
+              <button class="toggle-btn active" onclick="selectToggle('feeToggle',this)">Yes, if justified</button>
+              <button class="toggle-btn" onclick="selectToggle('feeToggle',this)">Only free cards</button>
+              <button class="toggle-btn" onclick="selectToggle('feeToggle',this)">Premium only</button>
+            </div>
+          </div>
+          <div class="sdiv"></div>
+          <div style="font-size:9px;color:rgba(151,198,177,.3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;">Review Summary</div>
+          <div class="review-row"><span class="review-key">Goal</span><span class="review-val" id="rv-goal">—</span></div>
+          <div class="review-row"><span class="review-key">Target Amount</span><span class="review-val" id="rv-amt">—</span></div>
+          <div class="review-row"><span class="review-key">Timeline</span><span class="review-val" id="rv-timeline">—</span></div>
+          <div class="review-row"><span class="review-key">Monthly Spend</span><span class="review-val" id="rv-spend">—</span></div>
+          <div class="review-row"><span class="review-key">Reward Preference</span><span class="review-val" id="rv-reward">—</span></div>
+          <div class="btn-row">
+            <button class="btn-back-sim" onclick="goStep(3)">← Back</button>
+            <button class="btn-hero-sim" id="buildBtn" onclick="buildPlan()">Build My Plan <span class="arrow">→</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-steps">
+          <div class="loading-step" id="ls1"><div class="check">✓</div> Analysing your goal</div>
+          <div class="loading-step" id="ls2"><div class="check">✓</div> Matching card rewards</div>
+          <div class="loading-step" id="ls3"><div class="check">✓</div> Simulating spend patterns</div>
+          <div class="loading-step" id="ls4"><div class="check">✓</div> Building your roadmap</div>
+        </div>
+      </div>
+
+      <!-- SANDBOX / SIMULATION SUMMARY (Agent 6) -->
+      <div class="panel" id="sandboxResultsPanel" style="margin-top:24px; display:none;">
+        <div class="panel-header">
+          <div class="panel-title">Sandbox Snapshot</div>
+          <div class="panel-badge">Live from backend</div>
+        </div>
+        <div class="rm-stats" style="margin-bottom:0;">
+          <div class="rm-stat">
+            <div class="rm-stat-label">Sandbox Rewards</div>
+            <div class="rm-stat-val" id="sb-rewards">—<span class="unit"> INR</span></div>
+            <div class="rm-stat-sub">Computed_rewards_inr</div>
+          </div>
+          <div class="rm-stat">
+            <div class="rm-stat-label">Sandbox Yield</div>
+            <div class="rm-stat-val" id="sb-yield">—<span class="unit"> %</span></div>
+            <div class="rm-stat-sub">Yield index</div>
+          </div>
+          <div class="rm-stat">
+            <div class="rm-stat-label">Vs. AI Plan</div>
+            <div class="rm-stat-val" id="sb-diff">—<span class="unit"> INR</span></div>
+            <div class="rm-stat-sub">Diff_vs_ai_inr</div>
+          </div>
+          <div class="rm-stat">
+            <div class="rm-stat-label">Run Mode</div>
+            <div class="rm-stat-val"><span class="unit" id="sb-mode-label">Sliders + cards</span></div>
+            <div class="rm-stat-sub">Updated on change</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROADMAP OUTPUT -->
+      <div id="roadmapSection">
+        <div class="roadmap-header">
+          <div class="roadmap-eyebrow">Simulation Complete</div>
+          <div class="roadmap-title">Your <span class="accent" id="rm-goalTitle">Goal</span> Roadmap</div>
+          <div class="roadmap-sub" id="rm-subline">Here's exactly how to get there.</div>
+        </div>
+        <div class="rm-stats">
+          <div class="rm-stat"><div class="rm-stat-label">Total Rewards</div><div class="rm-stat-val" id="rm-rewards">—</div><div class="rm-stat-sub">Projected</div></div>
+          <div class="rm-stat"><div class="rm-stat-label">Months to Goal</div><div class="rm-stat-val" id="rm-months">—</div><div class="rm-stat-sub">At current spend</div></div>
+          <div class="rm-stat"><div class="rm-stat-label">Effective Rate</div><div class="rm-stat-val" id="rm-rate">—</div><div class="rm-stat-sub">Reward %</div></div>
+          <div class="rm-stat"><div class="rm-stat-label">Annual Savings</div><div class="rm-stat-val" id="rm-savings">—</div><div class="rm-stat-sub">vs. no strategy</div></div>
+        </div>
+        <div class="timeline" id="timelineContainer"></div>
+        <div style="margin-top:32px;text-align:center;">
+          <button class="btn-back-sim" onclick="resetSim()">← Run Another Simulation</button>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /view-sim -->
+
+
+</main>
+
+<script>
+/* ── SINGLE SOURCE OF TRUTH ── */
+const state = { profile: null, results: null, sandboxResults: null };
+
+/* CURSOR */
+const dot = document.getElementById('dot');
+const ring = document.getElementById('ring');
+let mx=-100,my=-100,rx=-100,ry=-100;
+document.addEventListener('mousemove',e=>{ mx=e.clientX; my=e.clientY; dot.style.left=mx+'px'; dot.style.top=my+'px'; });
+document.addEventListener('mouseleave',()=>{ dot.style.opacity='0'; ring.style.opacity='0'; });
+document.addEventListener('mouseenter',()=>{ dot.style.opacity='1'; ring.style.opacity='1'; });
+(function lerpRing(){ rx+=(mx-rx)*.1; ry+=(my-ry)*.1; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(lerpRing); })();
+
+/* GREET / DATE */
+(function(){
+  const stored = {
+    firstName: sessionStorage.getItem('voynt_firstName') || '',
+    lastName:  sessionStorage.getItem('voynt_lastName')  || '',
+  };
+  const name = stored.firstName || 'there';
+  document.getElementById('greetName').textContent = name;
+  document.getElementById('sidebarName').textContent = (stored.firstName && stored.lastName)
+    ? stored.firstName + ' ' + stored.lastName
+    : (stored.firstName || 'User');
+  const initials = (stored.firstName?.[0]||'U').toUpperCase();
+  document.getElementById('avatarInitial').textContent = initials;
+
+  const now = new Date();
+  const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+  document.getElementById('topbarDate').textContent = now.toLocaleDateString('en-IN', opts);
+})();
+
+/* SCORE RING — populated by renderDashboard(results) */
+
+/* BAR CHART ANIMATION — only run when renderDashboard populates chart data */
+
+/* ── VIEW SWITCHER ── */
+const SIM_LINKS = ['sb-sim','sb-compare','sb-sandbox'];
+
+function showView(view) {
+  const dash = document.getElementById('view-dash');
+  const sim  = document.getElementById('view-sim');
+  const topbarLeft = document.getElementById('topbarLeft');
+  const topbarRight = document.getElementById('topbarRight');
+
+  // Update all sidebar links' active state
+  document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
+
+  if (view === 'sim') {
+    dash.classList.add('hidden');
+    sim.classList.add('active');
+    // Update topbar for sim view
+    topbarLeft.innerHTML = `<div class="topbar-title">Simul<span class="accent">ations</span></div><div class="topbar-sub">Goal → Simulation → Roadmap</div>`;
+    topbarRight.innerHTML = `<div class="topbar-sim-badge">Simulation Mode</div>`;
+    // Mark all sim-linked sidebar items active
+    document.querySelectorAll('[onclick*="showView(\'sim\'"]').forEach(l=>l.classList.add('active'));
+    window.scrollTo({top:0,behavior:'smooth'});
+  } else {
+    sim.classList.remove('active');
+    dash.classList.remove('hidden');
+    // Restore dashboard topbar
+    const now = new Date();
+    const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+    const h = now.getHours();
+    const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    const storedName = sessionStorage.getItem('voynt_firstName') || 'there';
+    topbarLeft.innerHTML = `<div class="topbar-greeting">${greeting}, <span class="accent">${storedName}</span>.</div><div class="topbar-date">${now.toLocaleDateString('en-IN', opts)}</div>`;
+    topbarRight.innerHTML = `<div class="pulse-badge"><span class="pulse-dot"></span>Strategy Active</div>`;
+    document.getElementById('sb-dash').classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+}
+
+/* ── SIM STEP NAV ── */
+let current = 1;
+const TOTAL = 4;
+
+function goStep(n) {
+  if (n > current && !validateStep(current)) return;
+  document.getElementById('step'+current).classList.remove('active');
+  current = n;
+  document.getElementById('step'+n).classList.add('active');
+  updateSegs(n);
+  if (n === 4) populateReview();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function updateSegs(n) {
+  for (let i=1; i<=TOTAL; i++) {
+    const seg = document.getElementById('seg'+i);
+    const lbl = document.getElementById('lbl'+i);
+    seg.className = 'seg' + (i < n ? ' done' : i===n ? ' active' : '');
+    lbl.className = 'seg-label' + (i < n ? ' done' : i===n ? ' active' : '');
+  }
+}
+
+function validateStep(s) {
+  if (s === 1) {
+    const g = document.getElementById('goalInput').value.trim();
+    if (!g) { document.getElementById('goalInput').focus(); shake(document.getElementById('goalInput')); return false; }
+  }
+  return true;
+}
+
+function shake(el) {
+  el.style.transition='transform .08s'; el.style.transform='translateX(-6px)';
+  setTimeout(()=>{el.style.transform='translateX(6px)'},80);
+  setTimeout(()=>{el.style.transform='translateX(0)';el.style.border='1px solid rgba(220,80,80,.5)'},160);
+  setTimeout(()=>{el.style.border=''},1000);
+}
+
+/* ── GOAL EXAMPLES ── */
+function setGoal(text) {
+  document.getElementById('goalInput').value = text;
+  const match = text.match(/₹(\d+(\.\d+)?)(L|K)?/i);
+  if (match) {
+    let amt = parseFloat(match[1]);
+    if (match[3]==='L'||match[3]==='l') amt *= 100000;
+    if (match[3]==='K'||match[3]==='k') amt *= 1000;
+    document.getElementById('targetAmt').value = Math.round(amt);
+    document.getElementById('targetAmt').dispatchEvent(new Event('input'));
+  }
+}
+
+/* ── SLIDERS ── */
+function formatINR(val) {
+  val = parseInt(val);
+  if (val >= 100000) return '₹' + (val/100000).toFixed(val%100000===0?0:1)+'L';
+  return '₹' + val.toLocaleString('en-IN');
+}
+// Slider labels/gradients are updated via state.profile + render() in DOMContentLoaded
+
+/* ── CHIPS ── */
+function toggleChip(el) {
+  const noneChip = el.closest('.chip-grid')?.querySelector('.none-chip');
+  if (noneChip && el !== noneChip) noneChip.classList.remove('selected');
+  el.classList.toggle('selected');
+}
+function selectSingle(el, groupId) {
+  document.querySelectorAll('#'+groupId+' .chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectNone(el) {
+  el.closest('.chip-grid').querySelectorAll('.chip:not(.none-chip)').forEach(c=>c.classList.remove('selected'));
+  el.classList.toggle('selected');
+}
+
+/* ── TOGGLE GROUPS ── */
+function selectToggle(groupId, el) {
+  document.querySelectorAll('#'+groupId+' .toggle-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ── CARD SEARCH ── */
+function filterCards() {
+  const q = document.getElementById('cardSearch').value.toLowerCase();
+  document.querySelectorAll('#cardChips .chip').forEach(c => {
+    const name = c.dataset.card || c.textContent.trim();
+    c.style.display = name.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+/* ── FLOAT SELECT ── */
+function floatSel(el, labelId) {
+  if (el.value) {
+    const lbl = document.getElementById(labelId);
+    lbl.style.cssText = 'top:6px;font-size:9px;color:var(--beauty);letter-spacing:1.5px;position:absolute;left:14px;pointer-events:none;z-index:1;';
+  }
+}
+
+/* ── REVIEW POPULATE ── */
+function populateReview() {
+  const goal  = document.getElementById('goalInput').value || '—';
+  const amt   = document.getElementById('targetAmt').value;
+  const tl    = document.getElementById('targetTimeline').value;
+  const spend = document.getElementById('spendSlider').value;
+  const reward = document.querySelector('#rewardChips .chip.selected')?.textContent.trim() || '—';
+  document.getElementById('rv-goal').textContent = goal;
+  document.getElementById('rv-amt').innerHTML = amt ? `<span class="highlight">₹${parseInt(amt).toLocaleString('en-IN')}</span>` : '—';
+  document.getElementById('rv-timeline').textContent = tl ? tl+' months' : '—';
+  document.getElementById('rv-spend').innerHTML = `<span class="highlight">${formatINR(spend)}/mo</span>`;
+  document.getElementById('rv-reward').textContent = reward;
+}
+
+/* ── BUILD PLAN ── */
+function buildPlan() {
+  const state = collectState();
+  for(let i=1;i<=4;i++) document.getElementById('step'+i).style.display='none';
+  document.querySelectorAll('.seg-bar, .seg-labels').forEach(el=>el.style.opacity='.3');
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.classList.add('active');
+  ['ls1','ls2','ls3','ls4'].forEach((id, i) => {
+    setTimeout(()=> document.getElementById(id).classList.add('show'), i * 600 + 300);
+  });
+  setTimeout(()=>{ overlay.classList.remove('active'); renderRoadmap(state); }, 3000);
+}
+
+function collectState() {
+  return {
+    goal:     document.getElementById('goalInput').value || 'My Goal',
+    amount:   parseInt(document.getElementById('targetAmt').value) || 200000,
+    timeline: parseInt(document.getElementById('targetTimeline').value) || 6,
+    income:   parseInt(document.getElementById('incomeSlider').value),
+    spend:    parseInt(document.getElementById('spendSlider').value),
+    travel:   parseInt(document.getElementById('travelSlider').value),
+    reward:   document.querySelector('#rewardChips .chip.selected')?.textContent.trim() || '💰 Cashback',
+    credit:   document.querySelector('#creditToggle .toggle-btn.active')?.textContent.trim() || '750–800',
+    risk:     document.querySelector('#riskToggle .toggle-btn.active')?.textContent.trim() || 'Moderate',
+    fees:     document.querySelector('#feeToggle .toggle-btn.active')?.textContent.trim() || 'Yes, if justified',
+    cards:    [...document.querySelectorAll('#cardChips .chip.selected:not(.none-chip)')].map(c=>c.dataset.card||c.textContent.trim()),
+    cats:     [...document.querySelectorAll('#catChips .chip.selected')].map(c=>c.textContent.trim()),
+  };
+}
+
+/* ── SIMULATION ENGINE ── */
+function simulate(state) {
+  const isMiles = state.reward.includes('Miles');
+  const isCashback = state.reward.includes('Cashback');
+  const isTravel = state.cats.some(c=>c.includes('Travel'));
+  let baseRate = 0.035;
+  if (state.risk === 'Moderate') baseRate = 0.05;
+  if (state.risk === 'Aggressive') baseRate = 0.069;
+  if (state.credit === '800+') baseRate += 0.01;
+  if (state.fees === 'Premium only') baseRate += 0.015;
+  if (isTravel && isMiles) baseRate += 0.01;
+  const monthlyRewards = Math.round(state.spend * baseRate);
+  const travelBonus = Math.round((state.travel / 12) * (isTravel ? 0.08 : 0.03));
+  const totalMonthly = monthlyRewards + travelBonus;
+  const annualRewards = totalMonthly * 12;
+  const monthsNeeded = Math.max(1, Math.ceil(state.amount / totalMonthly));
+  const actualMonths = Math.min(monthsNeeded, state.timeline || 12);
+  const recommend = [];
+  if (state.credit === '800+' || state.credit === '750–800') {
+    if (isMiles || isTravel) recommend.push({name:'HDFC Regalia Gold', color:'green', reward:'5x Miles on travel'});
+    recommend.push({name:'Axis Atlas', color:'pale', reward:'5 EDGE/₹100'});
+  }
+  if (isCashback) recommend.push({name:'Amex MRCC', color:'dark', reward:'5% Cashback'});
+  if (state.cats.some(c=>c.includes('Shopping')||c.includes('Online'))) recommend.push({name:'ICICI Amazon Pay', color:'dark', reward:'5% on Amazon'});
+  if (state.cats.some(c=>c.includes('Dining'))) recommend.push({name:'HDFC Millennia', color:'green', reward:'5% on Dining'});
+  if (recommend.length === 0) recommend.push({name:'Axis Atlas', color:'pale', reward:'5 EDGE/₹100'});
+  return { totalMonthly, annualRewards, monthsNeeded:actualMonths, baseRate, recommend,
+           targetAmt:state.amount, savingsVsNone: Math.round(annualRewards * 0.7) };
+}
+
+/* ── RENDER ROADMAP ── */
+function renderRoadmap(state) {
+  const sim = simulate(state);
+  document.getElementById('rm-goalTitle').textContent = state.goal;
+  document.getElementById('rm-subline').textContent = `Based on ₹${sim.totalMonthly.toLocaleString('en-IN')}/mo in rewards at ${(sim.baseRate*100).toFixed(1)}% effective rate.`;
+  document.getElementById('rm-rewards').innerHTML = `${formatINR(sim.annualRewards)}<span class="unit">/yr</span>`;
+  document.getElementById('rm-months').innerHTML = `${sim.monthsNeeded}<span class="unit">mo</span>`;
+  document.getElementById('rm-rate').innerHTML = `${(sim.baseRate*100).toFixed(1)}<span class="unit">%</span>`;
+  document.getElementById('rm-savings').innerHTML = `${formatINR(sim.savingsVsNone)}<span class="unit">/yr</span>`;
+
+  const phases = buildPhases(state, sim);
+  const container = document.getElementById('timelineContainer');
+  container.innerHTML = '';
+  phases.forEach((phase, idx) => {
+    const item = document.createElement('div');
+    item.className = 'tl-item';
+    const dotClass = idx === 0 ? '' : 'done';
+    let cardHtml = '';
+    if (phase.cards && phase.cards.length) {
+      cardHtml = `<div class="card-reco-row">${phase.cards.map(c=>`<div class="card-pill"><div class="card-pill-chip ${c.color}">${c.name.split(' ')[0].substring(0,4).toUpperCase()}</div><span class="card-pill-name">${c.name}</span><span class="card-pill-reward">${c.reward}</span></div>`).join('')}</div>`;
+    }
+    const pct = phase.progress || 0;
+    const barHtml = pct > 0 ? `<div class="milestone-bar"><div class="milestone-fill" data-pct="${pct}" style="width:0"></div></div><div style="font-size:9px;color:rgba(151,198,177,.35);letter-spacing:.8px;margin-top:5px;">${pct}% toward goal</div>` : '';
+    item.innerHTML = `<div class="tl-dot ${dotClass}"></div><div class="tl-card ${phase.highlight?'highlight-card':''}"><div class="tl-month">${phase.period} ${phase.tag?`<span class="tl-month-badge">${phase.tag}</span>`:''}</div><div class="tl-heading">${phase.title}</div><div class="tl-body">${phase.body}</div>${cardHtml}${barHtml}<div class="tl-actions" style="margin-top:${cardHtml||barHtml?'14px':'0'}">${phase.actions.map((a,i)=>`<span class="tl-action ${i===0?'primary':''}">${a}</span>`).join('')}</div></div>`;
+    container.appendChild(item);
+  });
+
+  document.getElementById('roadmapSection').classList.add('visible');
+  window.scrollTo({top:0, behavior:'smooth'});
+  setTimeout(()=>{
+    document.querySelectorAll('.tl-item').forEach((el, i) => {
+      setTimeout(()=>{
+        el.classList.add('reveal');
+        const fill = el.querySelector('.milestone-fill');
+        if (fill) fill.style.width = fill.dataset.pct + '%';
+      }, i * 180);
+    });
+  }, 300);
+}
+
+function buildPhases(state, sim) {
+  const months = state.timeline || 6;
+  const spend = sim.totalMonthly;
+  const target = sim.targetAmt;
+  const rec = sim.recommend;
+  const reward = state.reward;
+  const phases = [];
+
+  phases.push({ period:'Now — Week 1', tag:'Kickoff', title:'Activate your strategy',
+    body:`Your goal: <strong>${state.goal}</strong>. You need <strong>${formatINR(target)}</strong> in rewards over <strong>${months} months</strong>. Voynt will route your spend through the highest-earning cards for each category.`,
+    cards: rec.slice(0,2), actions:['Apply for top card','Set spend routing rules','Enable reward tracking'], progress:0, highlight:true });
+
+  const m1pct = Math.min(100, Math.round(spend/target*100));
+  phases.push({ period:'Month 1', tag:null, title:'First rewards hit your account',
+    body:`Route your monthly spend through your primary card. You'll earn <strong>~${formatINR(spend)}</strong> in your first month — ${reward.includes('Miles')?'enough for a short domestic flight':'redeemable immediately as cashback or points'}.`,
+    cards:[], actions:['Route groceries via '+(rec[0]?.name?.split(' ').slice(0,2).join(' ')||'top card'),'Enable auto-pay','Check reward dashboard'], progress:m1pct });
+
+  const midMonth = Math.max(2, Math.floor(months/2));
+  const midEarned = spend * midMonth;
+  const midPct = Math.min(100, Math.round(midEarned/target*100));
+  phases.push({ period:`Month ${midMonth}`, tag:'Midpoint', title:'Halfway milestone',
+    body:`By month ${midMonth} you'll have accumulated <strong>${formatINR(midEarned)}</strong> in rewards (${midPct}% of goal). ${midPct>=100?'🎯 Goal achieved early!':`You need <strong>${formatINR(Math.max(0,target-midEarned))}</strong> more.`}`,
+    cards: rec.slice(1,3), actions:['Review reward balance','Check for bonus offers','Optimise spend routing'], progress:Math.min(100,midPct) });
+
+  const nearMonth = Math.max(midMonth+1, months-1);
+  const nearEarned = spend * nearMonth;
+  const nearPct = Math.min(100, Math.round(nearEarned/target*100));
+  if (nearMonth !== midMonth && months > 3) {
+    phases.push({ period:`Month ${nearMonth}`, tag:null, title:'Final sprint',
+      body:`You've earned <strong>${formatINR(nearEarned)}</strong>. ${nearPct>=100?'You've already hit your goal!':`<strong>${formatINR(Math.max(0,target-nearEarned))}</strong> remaining — consider a targeted spend push or bonus redemption.`}`,
+      cards:[], actions:['Confirm redemption method','Stack bonus categories','Check waiver eligibility'], progress:Math.min(100,nearPct) });
+  }
+
+  const finalEarned = spend * months;
+  const finalPct = Math.min(100, Math.round(finalEarned/target*100));
+  phases.push({ period:`Month ${months}`, tag:finalEarned>=target?'🎯 Goal Reached':'Final Month',
+    title: finalEarned>=target?`${state.goal} — unlocked.`:'Redemption time',
+    body: finalEarned>=target
+      ?`You've accumulated <strong>${formatINR(finalEarned)}</strong> in rewards — <strong>${formatINR(finalEarned-target)}</strong> more than your target. ${reward.includes('Miles')?'Book your flights, upgrade to business class, or roll rewards into the next goal.':'Redeem as statement credit, gift cards, or transfer to travel partners.'}`
+      :`You've earned <strong>${formatINR(finalEarned)}</strong> (${finalPct}% of your ${formatINR(target)} target). Extend by ${months} more months to close the gap.`,
+    cards:[], actions:['Redeem rewards','Book through portal for bonus value','Set next goal'], progress:Math.min(100,finalPct), highlight:finalEarned>=target });
+
+  return phases;
+}
+
+/* ── RESET SIM ── */
+function resetSim() {
+  document.getElementById('roadmapSection').classList.remove('visible');
+  document.getElementById('loadingOverlay').classList.remove('active');
+  document.querySelectorAll('.seg-bar, .seg-labels').forEach(el=>el.style.opacity='1');
+  ['ls1','ls2','ls3','ls4'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  for(let i=1;i<=4;i++) {
+    const el = document.getElementById('step'+i);
+    el.style.display = '';
+    el.classList.toggle('active', i===1);
+  }
+  current = 1;
+  updateSegs(1);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ── PROFILE FROM DOM (for state sync) ── */
+function readProfileFromDOM() {
+  const spendSlider = document.querySelector('#step2 #spendSlider') || document.getElementById('spendSlider');
+  const travelSlider = document.querySelector('#step2 #travelSlider') || document.getElementById('travelSlider');
+  const incomeSlider = document.querySelector('#step2 #incomeSlider') || document.getElementById('incomeSlider');
+
+  const income = incomeSlider ? parseInt(incomeSlider.value || '0') : 0;
+  const spend = spendSlider ? parseInt(spendSlider.value || '0') : 0;
+  const travel = travelSlider ? parseInt(travelSlider.value || '0') : 0;
+
+  const cardChips = document.querySelectorAll('#cardChips .chip.selected:not(.none-chip)');
+  const selected_cards = Array.from(cardChips).map(c => c.dataset.card || c.textContent.trim()).filter(Boolean);
+
+  return { income, spend, travel, selected_cards };
+}
+
+/* ── SANDBOX (Agent 6) INTEGRATION ── */
+function computeSandboxArgs() {
+  const sessionId = sessionStorage.getItem('voynt_session_id');
+  if (!sessionId) return null;
+
+  const spendSlider = document.querySelector('#step2 #spendSlider') || document.getElementById('spendSlider');
+  const travelSlider = document.querySelector('#step2 #travelSlider') || document.getElementById('travelSlider');
+
+  // Live reads with sessionStorage fallback
+  const monthly_spend_inr = spendSlider
+    ? parseFloat(spendSlider.value || '0')
+    : (parseFloat(sessionStorage.getItem('voynt_monthly_spend')) || 0);
+  const goal_amount_inr = travelSlider
+    ? parseFloat(travelSlider.value || '0')
+    : (parseFloat(sessionStorage.getItem('voynt_goal_amount')) || 0);
+  const annualTravel = goal_amount_inr;
+  const monthlyTravel = annualTravel > 0 ? annualTravel / 12.0 : 0;
+
+  // spend_breakdown: individual category inputs if they exist, else sessionStorage
+  let spend_breakdown = null;
+  const categoryIds = ['groceries','dining','travel','fuel','online','entertainment','utilities','other'];
+  const firstInput = document.getElementById('sb-' + categoryIds[0]);
+  if (firstInput) {
+    spend_breakdown = {};
+    categoryIds.forEach(function (key) {
+      const el = document.getElementById('sb-' + key);
+      const v = el ? parseFloat(el.value || '0') : 0;
+      if (!isNaN(v) && v > 0) spend_breakdown[key] = v;
+    });
+  }
+  if (!spend_breakdown) {
+    try {
+      const stored = sessionStorage.getItem('voynt_spend_breakdown');
+      spend_breakdown = stored ? JSON.parse(stored) : null;
+    } catch (_) {
+      spend_breakdown = null;
+    }
+  }
+
+  const cardChips = document.querySelectorAll('#cardChips .chip.selected:not(.none-chip)');
+  const selectedCards = [];
+  cardChips.forEach(function (chip) {
+    const id = chip.dataset.card || chip.textContent.trim();
+    if (id) selectedCards.push(id);
+  });
+
+  const spend_overrides = {};
+  if (selectedCards.length > 0) {
+    const primary = selectedCards[0];
+    spend_overrides[primary] = {};
+
+    if (spend_breakdown && typeof spend_breakdown === 'object' && Object.keys(spend_breakdown).length > 0) {
+      Object.keys(spend_breakdown).forEach(function (cat) {
+        const amt = parseFloat(spend_breakdown[cat]) || 0;
+        if (amt > 0) spend_overrides[primary][cat] = amt;
+      });
+    } else {
+      const remaining = Math.max(0, monthly_spend_inr - monthlyTravel);
+      if (monthlyTravel > 0) spend_overrides[primary].travel = monthlyTravel;
+      if (remaining > 0) spend_overrides[primary].other = remaining;
+    }
+  }
+
+  return {
+    sessionId: sessionId,
+    spend_overrides: spend_overrides,
+    selected_cards: selectedCards,
+  };
+}
+
+function callSandboxImmediate() {
+  if (!window.VoyntAPI || typeof window.VoyntAPI.runSandbox !== 'function') {
+    console.warn('VoyntAPI.runSandbox not available');
+    return;
+  }
+  const args = computeSandboxArgs();
+  if (!args) return;
+
+  window.VoyntAPI
+    .runSandbox(args.sessionId, args.spend_overrides, args.selected_cards)
+    .then(function (res) {
+      state.sandboxResults = res;
+      render();
+    })
+    .catch(function (err) {
+      console.error('Sandbox error:', err);
+      alert('Sandbox simulation failed. Please try again.');
+    });
+}
+
+function debounce(fn, delay) {
+  let timer;
+  return function () {
+    const ctx = this;
+    const args = arguments;
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      fn.apply(ctx, args);
+    }, delay);
+  };
+}
+
+const debouncedSandbox = debounce(callSandboxImmediate, 600);
+
+/* ── SINGLE RENDER: reads from state and updates all DOM ── */
+function render() {
+  try {
+    const results = state.results;
+    const strategy = results && results.strategy ? results.strategy : null;
+    const yieldRes = results && results.yield_result ? results.yield_result : null;
+
+    // Profile-driven UI (slider labels and gradients)
+    if (state.profile) {
+      const p = state.profile;
+      const sliders = [
+        { id: 'incomeSlider', valId: 'incomeVal', val: p.income },
+        { id: 'spendSlider', valId: 'spendVal', val: p.spend },
+        { id: 'travelSlider', valId: 'travelVal', val: p.travel }
+      ];
+      sliders.forEach(function (s) {
+        const sl = document.getElementById(s.id);
+        const valEl = document.getElementById(s.valId);
+        if (s.val != null && valEl) valEl.textContent = formatINR(s.val);
+        if (s.val != null && sl) {
+          const pct = (s.val - sl.min) / (sl.max - sl.min) * 100;
+          sl.style.background = `linear-gradient(90deg, rgba(98,159,134,.6) ${pct}%, rgba(255,255,255,.06) ${pct}%)`;
+        }
+      });
+    }
+
+    // Sandbox panel (from state.sandboxResults)
+    const sbResult = state.sandboxResults;
+    const panel = document.getElementById('sandboxResultsPanel');
+    if (panel && sbResult) panel.style.display = 'block';
+    if (sbResult) {
+      const rewards = typeof sbResult.computed_rewards_inr === 'number' ? sbResult.computed_rewards_inr : 0;
+      const yieldIdx = typeof sbResult.yield_index === 'number' ? sbResult.yield_index : 0;
+      const diff = typeof sbResult.diff_vs_ai_inr === 'number' ? sbResult.diff_vs_ai_inr : 0;
+      const rEl = document.getElementById('sb-rewards');
+      const yEl = document.getElementById('sb-yield');
+      const dEl = document.getElementById('sb-diff');
+      if (rEl) rEl.innerHTML = `${formatINR(Math.round(rewards))}<span class="unit"> INR</span>`;
+      if (yEl) yEl.innerHTML = `${(yieldIdx * 100).toFixed(2)}<span class="unit"> %</span>`;
+      if (dEl) {
+        const sign = diff > 0 ? '+' : '';
+        dEl.innerHTML = `${sign}${formatINR(Math.round(diff))}<span class="unit"> INR</span>`;
+      }
+    }
+
+    // Dashboard content (from state.results)
+
+    // Totals
+    if (strategy) {
+      const totalRewards = strategy.total_rewards_inr || 0;
+      const totalFees = strategy.total_fees_inr || 0;
+      const netValue = strategy.net_value_inr || 0;
+
+      const rewardsEl = document.getElementById('statTotalRewards');
+      const feesEl = document.getElementById('statTotalFees');
+      const netEl = document.getElementById('statNetValue');
+
+      if (rewardsEl) rewardsEl.textContent = '₹' + Math.round(totalRewards).toLocaleString('en-IN');
+      if (feesEl) feesEl.textContent = '₹' + Math.round(totalFees).toLocaleString('en-IN');
+      if (netEl) netEl.textContent = '₹' + Math.round(netValue).toLocaleString('en-IN');
+    }
+
+    // Yield + break-even
+    if (yieldRes) {
+      const yieldIndexPct = (yieldRes.yield_index || 0) * 100;
+      const breakEven = yieldRes.break_even_month;
+
+      const yEl = document.getElementById('statYieldIndex');
+      const beEl = document.getElementById('statBreakEven');
+
+      if (yEl) yEl.textContent = yieldIndexPct.toFixed(1) + '%';
+      if (beEl) {
+        if (breakEven && breakEven > 0) {
+          beEl.textContent = 'Break-even in ' + breakEven + ' month' + (breakEven > 1 ? 's' : '');
+        } else {
+          beEl.textContent = 'Break-even — n/a';
+        }
+      }
+
+      // Also update score ring if present
+      const circle = document.getElementById('scoreCircle');
+      const numEl = document.getElementById('scoreNum');
+      const circumference = 289.03;
+      if (circle && numEl) {
+        const clamped = Math.max(0, Math.min(100, yieldIndexPct));
+        numEl.textContent = Math.round(clamped);
+        const offset = circumference - (circumference * clamped / 100);
+        circle.style.strokeDashoffset = offset;
+      }
+    }
+
+    // Narrative / insights
+    if (results && typeof results.ai_narrative === 'string') {
+      const nEl = document.getElementById('aiNarrativeText');
+      if (nEl) {
+        nEl.textContent = results.ai_narrative;
+      }
+    }
+
+    // Recommended cards list
+    if (strategy && Array.isArray(strategy.recommended_cards)) {
+      const container = document.getElementById('recommendedCardsContainer');
+      const summary = document.getElementById('recommendedSummary');
+      if (container) {
+        container.innerHTML = '';
+        if (strategy.recommended_cards.length === 0) {
+          container.textContent = '—';
+        } else {
+        strategy.recommended_cards.forEach(function (rec, idx) {
+          const cardDiv = document.createElement('div');
+          cardDiv.className = 'rec-card' + (idx === 0 ? ' top-pick' : '');
+
+          const chip = document.createElement('div');
+          const colorClass = idx === 0 ? 'green' : idx === 1 ? 'pale' : 'dark';
+          chip.className = 'cc-mini ' + colorClass;
+          chip.textContent = (rec.card_name || 'CARD').split(' ')[0].toUpperCase().slice(0, 5);
+
+          const info = document.createElement('div');
+          info.className = 'rec-info';
+          const name = document.createElement('div');
+          name.className = 'rec-name';
+          name.textContent = rec.card_name || 'Card';
+          const bank = document.createElement('div');
+          bank.className = 'rec-bank';
+          bank.textContent = (rec.action || '').toUpperCase() + ' · ' +
+            ((rec.approval_prob != null)
+              ? 'Approval ' + Math.round(rec.approval_prob * 100) + '%'
+              : '');
+          info.appendChild(name);
+          info.appendChild(bank);
+
+          const reward = document.createElement('div');
+          reward.className = 'rec-reward';
+          reward.textContent = rec.reason || '';
+
+          if (idx === 0) {
+            const tag = document.createElement('div');
+            tag.className = 'top-tag';
+            tag.textContent = 'Top Pick';
+            cardDiv.appendChild(tag);
+          }
+
+          cardDiv.appendChild(chip);
+          cardDiv.appendChild(info);
+          cardDiv.appendChild(reward);
+          container.appendChild(cardDiv);
+        });
+        }
+
+        if (summary) {
+          summary.textContent = strategy.recommended_cards.length
+            ? 'Based on your profile, Voynt recommends ' + strategy.recommended_cards.length + ' card' + (strategy.recommended_cards.length > 1 ? 's' : '') + ' with the actions shown above.'
+            : '—';
+        }
+      } else {
+        const summary = document.getElementById('recommendedSummary');
+        if (summary) summary.textContent = '—';
+      }
+    }
+
+    // Monthly plan timeline (simple text summary in roadmap timeline area)
+    if (strategy && Array.isArray(strategy.monthly_plan)) {
+      const container = document.getElementById('timelineContainer');
+      if (container) {
+        container.innerHTML = '';
+        strategy.monthly_plan.forEach(function (monthPlan) {
+          const item = document.createElement('div');
+          item.className = 'tl-item reveal';
+
+          const dot = document.createElement('div');
+          dot.className = 'tl-dot';
+          item.appendChild(dot);
+
+          const card = document.createElement('div');
+          card.className = 'tl-card';
+
+          const monthHdr = document.createElement('div');
+          monthHdr.className = 'tl-month';
+          monthHdr.textContent = 'Month ' + monthPlan.month;
+          card.appendChild(monthHdr);
+
+          const heading = document.createElement('div');
+          heading.className = 'tl-heading';
+          heading.textContent = 'Spend allocations';
+          card.appendChild(heading);
+
+          const body = document.createElement('div');
+          body.className = 'tl-body';
+          if (Array.isArray(monthPlan.allocations) && monthPlan.allocations.length) {
+            const lines = monthPlan.allocations.map(function (a) {
+              return (a.card_name || 'Card') + ' — ' +
+                (a.category || 'other') + ': ₹' +
+                Math.round(a.amount_inr || 0).toLocaleString('en-IN');
+            });
+            body.textContent = lines.join('; ');
+          } else {
+            body.textContent = 'No allocations for this month.';
+          }
+          card.appendChild(body);
+
+          item.appendChild(card);
+          container.appendChild(item);
+        });
+        const roadmap = document.getElementById('roadmapSection');
+        if (roadmap) {
+          roadmap.classList.add('visible');
+        }
+      }
+    }
+
+    // Spend breakdown chart (from first month allocations or profile spend_breakdown)
+    if (strategy) {
+      const chartContainer = document.getElementById('chartBars');
+      const catOrder = ['travel', 'groceries', 'dining', 'online', 'other'];
+      let totals = {};
+      if (Array.isArray(strategy.monthly_plan) && strategy.monthly_plan.length > 0) {
+        const first = strategy.monthly_plan[0];
+        if (Array.isArray(first.allocations)) {
+          first.allocations.forEach(function (a) {
+            const cat = (a.category || 'other').toLowerCase();
+            totals[cat] = (totals[cat] || 0) + (a.amount_inr || 0);
+          });
+        }
+      }
+      const sumTotal = Object.values(totals).reduce(function (a, b) { return a + b; }, 0);
+      const max = Math.max(...Object.values(totals), 1);
+      const barMap = { travel: 1, groceries: 2, dining: 3, online: 4, other: 5 };
+      catOrder.forEach(function (cat, idx) {
+        const i = barMap[cat] || 5;
+        const pctEl = document.getElementById('barPct' + i);
+        const fillEl = document.getElementById('b' + i);
+        const amt = totals[cat] || 0;
+        const pct = sumTotal > 0 ? Math.round((amt / sumTotal) * 100) : 0;
+        const height = max > 0 ? (amt / max * 80) : 0;
+        if (pctEl) pctEl.textContent = pct + '%';
+        if (fillEl) fillEl.style.height = height + 'px';
+      });
+    }
+
+    // Reward activity (from first month allocations)
+    const raContainer = document.getElementById('rewardActivityContainer');
+    if (raContainer) {
+      raContainer.innerHTML = '';
+      if (strategy && Array.isArray(strategy.monthly_plan) && strategy.monthly_plan.length > 0) {
+        const first = strategy.monthly_plan[0];
+        if (Array.isArray(first.allocations) && first.allocations.length > 0) {
+          const icons = { travel: '✈️', groceries: '🛒', dining: '🍽️', fuel: '⛽', online: '📦', entertainment: '🎬', utilities: '🏠', other: '📋' };
+          first.allocations.slice(0, 6).forEach(function (a) {
+            const div = document.createElement('div');
+            div.className = 'activity-item';
+            div.innerHTML = '<div class="act-icon">' + (icons[a.category] || '📋') + '</div>' +
+              '<div class="act-info"><div class="act-title">' + (a.card_name || 'Card') + ' — ' + (a.category || 'other') + '</div>' +
+              '<div class="act-date">' + (a.card_name || '') + '</div></div>' +
+              '<div class="act-pts">' + Math.round(a.expected_value_inr || 0) + ' <span class="act-sub">INR</span></div>';
+            raContainer.appendChild(div);
+          });
+        } else {
+          raContainer.textContent = '—';
+        }
+      } else {
+        raContainer.textContent = '—';
+      }
+    }
+
+    // Next steps (from recommended_cards)
+    const nsContainer = document.getElementById('nextStepsContainer');
+    if (nsContainer) {
+      nsContainer.innerHTML = '';
+      if (strategy && Array.isArray(strategy.recommended_cards) && strategy.recommended_cards.length > 0) {
+        const actions = { apply: 'Apply', activate: 'Activate', retire: 'Retire' };
+        strategy.recommended_cards.slice(0, 4).forEach(function (rec) {
+          const div = document.createElement('div');
+          div.className = 'activity-item';
+          const actionLabel = actions[rec.action] || rec.action || 'Review';
+          div.innerHTML = '<div class="act-icon">🎯</div>' +
+            '<div class="act-info"><div class="act-title" style="color:var(--pale)">' + actionLabel + ': ' + (rec.card_name || 'Card') + '</div>' +
+            '<div class="act-date">' + (rec.reason || '') + '</div></div>' +
+            '<div style="font-size:9px;color:var(--beauty);white-space:nowrap;">→</div>';
+          nsContainer.appendChild(div);
+        });
+      } else {
+        nsContainer.textContent = '—';
+      }
+    }
+
+    // Hide loading / ensure main dashboard is visible when we have results
+    if (state.results) {
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) overlay.classList.remove('active');
+      const dash = document.getElementById('view-dash');
+      if (dash) dash.classList.remove('hidden');
+    }
+  } catch (e) {
+    console.error('Error rendering dashboard:', e);
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.remove('active');
+  }
+}
+
+/* ── DASHBOARD INIT: load results from backend or cache ── */
+function initDashboard() {
+  const sessionId = sessionStorage.getItem('voynt_session_id');
+  if (!sessionId) {
+    window.location.href = 'onboarding.html';
+    return;
+  }
+
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) overlay.classList.add('active');
+
+  // Check cached results first — skip polling if session matches and we have full results
+  const cachedRaw = sessionStorage.getItem('voynt_last_results');
+  if (cachedRaw) {
+    try {
+      const cached = JSON.parse(cachedRaw);
+      const cachedSessionId = cached && (cached.session_id || cached.sessionId);
+      const hasFullResults = cached && (cached.strategy || cached.status === 'complete');
+      if (cachedSessionId === sessionId && hasFullResults) {
+        state.results = cached;
+        render();
+        return;
+      }
+    } catch (_) {}
+  }
+
+  if (!window.VoyntAPI || typeof window.VoyntAPI.pollStatus !== 'function') {
+    if (overlay) overlay.classList.remove('active');
+    return;
+  }
+
+  function onComplete() {
+    if (typeof window.VoyntAPI.getResults !== 'function') {
+      if (overlay) overlay.classList.remove('active');
+      return;
+    }
+    window.VoyntAPI
+      .getResults(sessionId)
+      .then(function (results) {
+        sessionStorage.setItem('voynt_last_results', JSON.stringify(results));
+        state.results = results;
+        render();
+      })
+      .catch(function (err) {
+        console.error(err);
+        if (overlay) overlay.classList.remove('active');
+        alert('Failed to load your strategy results. Please refresh the page.');
+      });
+  }
+
+  function onFailed(error) {
+    console.error(error);
+    if (overlay) overlay.classList.remove('active');
+    alert('Your strategy run failed. Please go back to onboarding and try again.');
+  }
+
+  window.VoyntAPI.pollStatus(sessionId, onComplete, onFailed);
+}
+
+document.addEventListener('DOMContentLoaded', initDashboard);
+
+// Wire sandbox sliders and card chips: update state.profile, render(), then sandbox
+document.addEventListener('DOMContentLoaded', function () {
+  state.profile = readProfileFromDOM();
+  render();
+
+  const spendSliderSim = document.querySelector('#step2 #spendSlider') || document.getElementById('spendSlider');
+  const travelSliderSim = document.querySelector('#step2 #travelSlider') || document.getElementById('travelSlider');
+  const incomeSliderSim = document.querySelector('#step2 #incomeSlider') || document.getElementById('incomeSlider');
+
+  [incomeSliderSim, spendSliderSim, travelSliderSim].forEach(function (el) {
+    if (el) {
+      el.addEventListener('input', function () {
+        state.profile = readProfileFromDOM();
+        render();
+        debouncedSandbox();
+      });
+    }
+  });
+
+  const cardChips = document.querySelectorAll('#cardChips .chip');
+  cardChips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      // Allow the chip's own toggle handler to run first, then update state and render
+      setTimeout(function () {
+        state.profile = readProfileFromDOM();
+        render();
+        debouncedSandbox();
+      }, 0);
+    });
+  });
+
+  // If there's an explicit "Run Simulation" or "Build My Plan" button, hook it to immediate sandbox run
+  const buildBtn = document.getElementById('buildBtn');
+  if (buildBtn) {
+    buildBtn.addEventListener('click', function () {
+      callSandboxImmediate();
+    });
+  }
+});
+
+</script>
+<script src="api.js"></script>
+</body>
+</html>
