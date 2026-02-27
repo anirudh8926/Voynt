@@ -3,6 +3,6 @@ uvicorn
 supabase
 numpy
 scipy
-gemini-generativeai
+anthropic
 python-dotenv
 pydantic

@@ -33,14 +33,19 @@ def get_strategy_result(session_id: str):
 
 
 def get_simulation_result(session_id: str):
-    return (
-        supabase.table("simulation_results")
-        .select("*")
-        .eq("session_id", session_id)
-        .maybe_single()
-        .execute()
-        .data
-    )
+    try:
+        return (
+            supabase.table("simulation_results")
+            .select("*")
+            .eq("session_id", session_id)
+            .maybe_single()
+            .execute()
+            .data
+        )
+    except Exception:
+        # If anything goes wrong fetching simulation, fall back to None so
+        # callers can safely treat simulation as unavailable.
+        return None
 
 
 def update_session_status(session_id: str, status: str):

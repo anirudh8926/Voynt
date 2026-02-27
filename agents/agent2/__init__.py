@@ -1,71 +1,68 @@
-from typing import List
+from __future__ import annotations
 
-from models import (
-    CardAllocation,
-    MonthPlan,
-    RecommendedCard,
-    StrategyPlan,
-    UserProfile,
-)
+import sys
+from typing import Any, Dict, List
+
+from .reward_matrix import build_cap_matrix, build_eligibility_mask, build_reward_matrix
+from .allocator import greedy_allocate
+from .welcome_bonus import evaluate_welcome_bonuses
+from .timeline import build_monthly_plan
+from models import StrategyPlan, UserProfile
 
 
-def run_agent2(profile: UserProfile, cards: List[dict]) -> StrategyPlan:
-    """
-    Multi-layer reward strategy optimizer.
-
-    This is a placeholder implementation to satisfy the pipeline contract.
-    It creates a simple plan that allocates the full monthly spend to the
-    first available card (if any) with zeroed reward metrics.
-    """
-    monthly_plan: List[MonthPlan] = []
-
-    if cards:
-        primary_card = cards[0]
-        card_id = str(primary_card.get("id", "card_1"))
-        card_name = str(primary_card.get("name", "Primary Card"))
+def run_agent2(profile: dict, cards: list[dict]) -> StrategyPlan:
+    # Never mutate input profile/cards
+    if isinstance(profile, UserProfile):
+        profile_dict: Dict[str, Any] = profile.model_dump()
     else:
-        card_id = "card_1"
-        card_name = "Generic Rewards Card"
+        profile_dict = dict(profile)
 
-    for month in range(1, profile.timeline_months + 1):
-        allocation = CardAllocation(
-            card_id=card_id,
-            card_name=card_name,
-            category="other",
-            amount_inr=profile.monthly_spend_inr,
-            expected_pts=0.0,
-            expected_value_inr=0.0,
-        )
-        month_plan = MonthPlan(
-            month=month,
-            allocations=[allocation],
-            total_expected_value_inr=allocation.expected_value_inr,
-        )
-        monthly_plan.append(month_plan)
+    cards_list: List[dict] = list(cards)
 
-    recommended_cards: List[RecommendedCard] = [
-        RecommendedCard(
-            card_id=card_id,
-            card_name=card_name,
-            action="apply",
-            reason="Placeholder strategy — real optimizer not yet implemented.",
-            approval_prob=float(
-                cards[0].get("approval_prob", 0.8) if cards else 0.8
-            ),
-            expected_bonus_value_inr=0.0,
-        )
-    ]
+    # Step 1: Build matrices
+    matrix = build_reward_matrix(cards_list, profile_dict)
+    cap_matrix = build_cap_matrix(cards_list)
+    mask = build_eligibility_mask(cards_list, profile_dict)
 
-    total_rewards_inr = 0.0
-    total_fees_inr = 0.0
-    net_value_inr = total_rewards_inr - total_fees_inr
+    # Step 2: Greedy allocation for one base month
+    allocations = greedy_allocate(cards_list, profile_dict, matrix, cap_matrix, mask)
+
+    # Step 3: Evaluate welcome bonuses
+    allocated_ids = {a.card_id for a in allocations}
+    recommended = evaluate_welcome_bonuses(cards_list, profile_dict, allocated_ids)
+
+    # Step 4: Project across timeline
+    monthly_plan = build_monthly_plan(allocations, recommended, cards_list, profile_dict)
+
+    # Step 5: Compute totals
+    total_rewards = sum(float(m.total_expected_value_inr) for m in monthly_plan)
+
+    plan_card_ids = allocated_ids | {r.card_id for r in recommended if r.action == "apply"}
+
+    # Prorate annual fees over the plan timeline to avoid charging a full
+    # year of fees for shorter plans.
+    timeline_months = float(profile_dict.get("timeline_months", 12) or 12)
+    proration_factor = timeline_months / 12.0
+    total_fees = sum(
+        float(c.get("annual_fee_inr", 0.0) or 0.0) * proration_factor
+        for c in cards_list
+        if str(c.get("id")) in plan_card_ids
+    )
+
+    net_value = total_rewards - total_fees
+
+    if net_value < 0:
+        print(
+            f"WARNING: net_value_inr is negative (₹{net_value:,.2f}) — fees exceed rewards",
+            file=sys.stderr,
+        )
 
     return StrategyPlan(
-        session_id=profile.session_id,
+        session_id=str(profile_dict.get("session_id", "")),
         monthly_plan=monthly_plan,
-        recommended_cards=recommended_cards,
-        total_rewards_inr=total_rewards_inr,
-        total_fees_inr=total_fees_inr,
-        net_value_inr=net_value_inr,
+        recommended_cards=recommended,
+        total_rewards_inr=round(float(total_rewards), 2),
+        total_fees_inr=round(float(total_fees), 2),
+        net_value_inr=round(float(net_value), 2),
     )
 

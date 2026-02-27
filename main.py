@@ -25,7 +25,7 @@ app = FastAPI(title="Voint Backend")
 
 
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-origins = {frontend_url, "http://localhost:5173"}
+origins = {frontend_url, "http://localhost:5173", "http://localhost:3000"}
 
 app.add_middleware(
     CORSMiddleware,
@@ -126,7 +126,8 @@ async def get_results(session_id: str) -> ResultsResponse:
         )
 
     strategy_data = get_strategy_result(session_id)
-    simulation_data = get_simulation_result(session_id)
+    # Best-effort fetch; simulation is currently bypassed in the API response.
+    _simulation_data = get_simulation_result(session_id)
 
     strategy: Optional[StrategyPlan] = None
     yield_result: Optional[YieldResult] = None
@@ -146,16 +147,13 @@ async def get_results(session_id: str) -> ResultsResponse:
             efficiency_score=0.0,
         )
 
-    simulation = None
-    if simulation_data is not None:
-        # SimulationResult model will ignore any extra keys from the DB row
-        simulation = SimulationResult(**simulation_data)  # type: ignore[name-defined]
-
     return ResultsResponse(
         session_id=session_id,
         status=status,
         strategy=strategy,
-        simulation=simulation,
+        # Temporarily bypass simulation in the public API until the model
+        # is fully defined and wired; always return null here.
+        simulation=None,
         yield_result=yield_result,
         ai_narrative=ai_narrative,
     )
