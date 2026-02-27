@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+supabase
+numpy
+scipy
+gemini-generativeai
+python-dotenv
+pydantic
